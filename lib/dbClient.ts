@@ -20,17 +20,26 @@ const pool = new Pool({
   connectionTimeoutMillis: 5000, // 5s timeout (higher for tunnel latency)
 });
 
-// eslint-disable-next-line no-console
 console.log(`[PostgreSQL] Pool configured → ${DB_CONFIG.host}:${DB_CONFIG.port}/${DB_CONFIG.database} (user: ${DB_CONFIG.user})`);
 
 // Log connection errors
 pool.on('error', (err) => {
-  // eslint-disable-next-line no-console
   console.error('[PostgreSQL] Unexpected error on idle client:', err);
 });
 
+// Transient error codes that should trigger a retry
+const RETRYABLE_CODES = new Set(['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EPIPE', 'EAI_AGAIN']);
+
+function isRetryableError(err: unknown): boolean {
+  if (err && typeof err === 'object' && 'code' in err) {
+    return RETRYABLE_CODES.has((err as { code: string }).code);
+  }
+  return false;
+}
+
 /**
- * Execute a parameterized query and return typed rows
+ * Execute a parameterized query and return typed rows.
+ * Automatically retries on transient connection errors (e.g. ECONNRESET from tunnel).
  * @param text - SQL query with $1, $2, etc. placeholders
  * @param params - Array of parameter values
  * @returns Array of typed row objects
@@ -39,23 +48,53 @@ export async function query<T extends QueryResultRow = QueryResultRow>(
   text: string,
   params?: (string | number | boolean | null | undefined)[]
 ): Promise<T[]> {
-  const result: QueryResult<T> = await pool.query(text, params);
-  return result.rows;
+  const MAX_RETRIES = 2;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const result: QueryResult<T> = await pool.query(text, params);
+      return result.rows;
+    } catch (err) {
+      if (attempt < MAX_RETRIES && isRetryableError(err)) {
+        const wait = 500 * Math.pow(2, attempt); // 500ms, 1000ms
+        console.warn(`[PostgreSQL] query retry ${attempt + 1}/${MAX_RETRIES} after ${wait}ms (${(err as { code: string }).code})`);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      throw err;
+    }
+  }
+  // Should never reach here, but TypeScript needs it
+  throw new Error('[PostgreSQL] query: max retries exceeded');
 }
 
 /**
- * Execute a query and return the full result with row count
- * Useful for INSERT/UPDATE/DELETE operations
+ * Execute a query and return the full result with row count.
+ * Automatically retries on transient connection errors.
+ * Useful for INSERT/UPDATE/DELETE operations.
  */
 export async function queryWithCount<T extends QueryResultRow = QueryResultRow>(
   text: string,
   params?: (string | number | boolean | null | undefined)[]
 ): Promise<{ rows: T[]; rowCount: number }> {
-  const result: QueryResult<T> = await pool.query(text, params);
-  return {
-    rows: result.rows,
-    rowCount: result.rowCount ?? 0,
-  };
+  const MAX_RETRIES = 2;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const result: QueryResult<T> = await pool.query(text, params);
+      return {
+        rows: result.rows,
+        rowCount: result.rowCount ?? 0,
+      };
+    } catch (err) {
+      if (attempt < MAX_RETRIES && isRetryableError(err)) {
+        const wait = 500 * Math.pow(2, attempt);
+        console.warn(`[PostgreSQL] queryWithCount retry ${attempt + 1}/${MAX_RETRIES} after ${wait}ms (${(err as { code: string }).code})`);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('[PostgreSQL] queryWithCount: max retries exceeded');
 }
 
 /**
@@ -105,21 +144,17 @@ export async function testConnection(retries = 3, delayMs = 1000): Promise<boole
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
       const result = await query<{ now: Date }>('SELECT NOW() as now');
-      // eslint-disable-next-line no-console
       console.log('[PostgreSQL] Connection successful:', result[0]?.now);
       return true;
     } catch (error) {
-      // eslint-disable-next-line no-console
       console.error(`[PostgreSQL] Connection attempt ${attempt}/${retries} failed:`, error);
       if (attempt < retries) {
         const wait = delayMs * Math.pow(2, attempt - 1);
-        // eslint-disable-next-line no-console
         console.log(`[PostgreSQL] Retrying in ${wait}ms...`);
         await new Promise((resolve) => setTimeout(resolve, wait));
       }
     }
   }
-  // eslint-disable-next-line no-console
   console.error('[PostgreSQL] All connection attempts failed. Is the Cloudflare tunnel running?');
   return false;
 }

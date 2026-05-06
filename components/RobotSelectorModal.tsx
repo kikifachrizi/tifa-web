@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import type { GroupedRobotWithStatus } from "@/lib/api";
+import { BatteryIcon } from "@/components/BatteryIcon";
 
 interface RobotSelectorModalProps {
     selectedGroupId: string | null;
@@ -91,17 +92,17 @@ export default function RobotSelectorModal({
 
     // Get battery color based on level
     const getBatteryColor = (battery: number | null) => {
-        if (battery === null) return "text-slate-400";
-        if (battery <= 30) return "text-rose-400";
-        if (battery <= 60) return "text-amber-400";
-        return "text-emerald-400";
+        if (battery === null) return "text-slate-700 dark:text-slate-400";
+        if (battery <= 30) return "text-rose-700 dark:text-rose-400";
+        if (battery <= 60) return "text-amber-700 dark:text-amber-400";
+        return "text-emerald-700 dark:text-emerald-400";
     };
 
     const getBatteryBg = (battery: number | null) => {
-        if (battery === null) return "bg-slate-500/10";
-        if (battery <= 30) return "bg-rose-500/10";
-        if (battery <= 60) return "bg-amber-500/10";
-        return "bg-emerald-500/10";
+        if (battery === null) return "bg-slate-100 dark:bg-slate-500/10";
+        if (battery <= 30) return "bg-rose-100 dark:bg-rose-500/10";
+        if (battery <= 60) return "bg-amber-100 dark:bg-amber-500/10";
+        return "bg-emerald-100 dark:bg-emerald-500/10";
     };
 
     return (
@@ -114,8 +115,8 @@ export default function RobotSelectorModal({
             >
                 {/* Robot Icon with animated ring */}
                 <div className="relative">
-                    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-blue-500/30 group-hover:border-blue-400/50 transition-colors">
-                        <svg className="w-5 h-5 text-blue-400 group-hover:text-blue-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-blue-300 dark:border-blue-500/30 group-hover:border-blue-400/50 transition-colors">
+                        <svg className="w-5 h-5 text-blue-700 dark:text-blue-400 group-hover:text-blue-700 dark:text-blue-300 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                         </svg>
                     </div>
@@ -130,7 +131,7 @@ export default function RobotSelectorModal({
                     <span className="block text-[10px] uppercase tracking-wider text-txt-sec font-medium">
                         {selectRobotLabel}
                     </span>
-                    <span className="block text-sm font-semibold text-txt-main truncate group-hover:text-blue-400 transition-colors">
+                    <span className="block text-sm font-semibold text-txt-main truncate group-hover:text-blue-700 dark:text-blue-400 transition-colors">
                         {displayName}
                     </span>
                 </div>
@@ -154,20 +155,20 @@ export default function RobotSelectorModal({
             {/* Modal Dropdown */}
             {isOpen && (
                 <>
-                    {/* Backdrop with blur */}
+                    {/* Backdrop */}
                     <div className="fixed inset-0 z-40" />
 
                     {/* Modal */}
                     <div
                         ref={modalRef}
-                        className="absolute top-full right-0 mt-3 w-[360px] bg-gradient-to-br from-sidebar via-card-bg to-sidebar rounded-2xl border border-border-base shadow-2xl shadow-black/30 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300"
+                        className="absolute top-full right-0 mt-3 w-[calc(100vw-2rem)] sm:w-[360px] max-h-[70vh] flex flex-col bg-gradient-to-br from-sidebar via-card-bg to-sidebar rounded-2xl border border-border-base shadow-2xl shadow-black/30 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300"
                     >
                         {/* Header */}
                         <div className="px-4 py-4 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 border-b border-border-base">
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-sm font-bold text-txt-main flex items-center gap-2">
-                                    <span className="h-6 w-6 rounded-lg bg-blue-500/20 flex items-center justify-center">
-                                        <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <span className="h-6 w-6 rounded-lg bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center">
+                                        <svg className="w-4 h-4 text-blue-700 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                                         </svg>
                                     </span>
@@ -193,7 +194,7 @@ export default function RobotSelectorModal({
                                     placeholder="Search robots..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-sidebar/80 border border-border-base text-sm text-txt-main placeholder:text-txt-sec/60 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                                    className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-sidebar/80 border border-border-base text-sm text-txt-main placeholder:text-txt-sec/60 focus:outline-none focus:border-blue-400 dark:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
                                 />
                             </div>
                         </div>
@@ -206,8 +207,8 @@ export default function RobotSelectorModal({
                                 className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-gradient-to-r hover:from-blue-500/10 hover:to-purple-500/10 transition-all border-b border-border-base/50 ${selectedGroupId === null ? 'bg-gradient-to-r from-blue-500/15 to-purple-500/15' : ''
                                     }`}
                             >
-                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-blue-500/30">
-                                    <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center border border-blue-300 dark:border-blue-500/30">
+                                    <svg className="w-5 h-5 text-blue-700 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
                                     </svg>
                                 </div>
@@ -227,8 +228,8 @@ export default function RobotSelectorModal({
                             {/* Online Robots Section */}
                             {onlineRobots.length > 0 && (
                                 <div>
-                                    <div className="px-4 py-2 bg-emerald-500/5 border-b border-border-base/50">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                                    <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-500/5 border-b border-border-base/50">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
                                             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
                                             Online ({onlineRobots.length})
                                         </span>
@@ -242,8 +243,8 @@ export default function RobotSelectorModal({
                                         >
                                             {/* Robot Avatar */}
                                             <div className="relative">
-                                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center border border-emerald-500/30 group-hover:border-emerald-400/50 transition-colors">
-                                                    <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center border border-emerald-300 dark:border-emerald-500/30 group-hover:border-emerald-400/50 transition-colors">
+                                                    <svg className="w-5 h-5 text-emerald-700 dark:text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                                                     </svg>
                                                 </div>
@@ -252,17 +253,17 @@ export default function RobotSelectorModal({
 
                                             {/* Robot Info */}
                                             <div className="flex-1 text-left min-w-0">
-                                                <span className="block text-sm font-semibold text-txt-main truncate group-hover:text-emerald-400 transition-colors">
+                                                <span className="block text-sm font-semibold text-txt-main truncate group-hover:text-emerald-700 dark:text-emerald-400 transition-colors">
                                                     {robot.displayName}
                                                 </span>
                                                 <div className="flex items-center gap-1.5 mt-0.5">
                                                     {robot.rbDevice && (
-                                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/15 text-blue-400 font-mono font-medium">
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 font-mono font-medium">
                                                             {robot.rbDevice.device_code}
                                                         </span>
                                                     )}
                                                     {robot.uiDevice && (
-                                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-500/15 text-purple-400 font-mono font-medium">
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-500/15 text-purple-700 dark:text-purple-400 font-mono font-medium">
                                                             UI
                                                         </span>
                                                     )}
@@ -272,9 +273,7 @@ export default function RobotSelectorModal({
                                             {/* Battery Level */}
                                             {robot.battery !== null && (
                                                 <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${getBatteryBg(robot.battery)}`}>
-                                                    <svg className={`w-4 h-4 ${getBatteryColor(robot.battery)}`} fill="currentColor" viewBox="0 0 24 24">
-                                                        <path d="M17 4h-3V2h-4v2H7v18h10V4zm-2 14H9V6h6v12z" />
-                                                    </svg>
+                                                    <BatteryIcon level={robot.battery} className={`w-4 h-4 ${getBatteryColor(robot.battery)}`} />
                                                     <span className={`text-xs font-bold ${getBatteryColor(robot.battery)}`}>
                                                         {robot.battery}%
                                                     </span>
@@ -297,8 +296,8 @@ export default function RobotSelectorModal({
                             {/* Offline Robots Section */}
                             {offlineRobots.length > 0 && (
                                 <div>
-                                    <div className="px-4 py-2 bg-slate-500/5 border-b border-border-base/50">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+                                    <div className="px-4 py-2 bg-slate-50 dark:bg-slate-500/5 border-b border-border-base/50">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-400 flex items-center gap-2">
                                             <span className="h-2 w-2 rounded-full bg-slate-500" />
                                             Offline ({offlineRobots.length})
                                         </span>
@@ -307,12 +306,12 @@ export default function RobotSelectorModal({
                                         <button
                                             key={robot.groupId}
                                             onClick={() => handleSelect(robot.groupId)}
-                                            className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-500/10 transition-all group ${selectedGroupId === robot.groupId ? 'bg-slate-500/15' : ''
+                                            className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-slate-100 dark:bg-slate-500/10 transition-all group ${selectedGroupId === robot.groupId ? 'bg-slate-100 dark:bg-slate-500/15' : ''
                                                 }`}
                                         >
                                             {/* Robot Avatar */}
                                             <div className="relative">
-                                                <div className="h-10 w-10 rounded-xl bg-slate-500/10 flex items-center justify-center border border-slate-500/20 group-hover:border-slate-400/30 transition-colors">
+                                                <div className="h-10 w-10 rounded-xl bg-slate-100 dark:bg-slate-500/10 flex items-center justify-center border border-slate-300 dark:border-slate-500/20 group-hover:border-slate-400/30 transition-colors">
                                                     <svg className="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
                                                     </svg>
@@ -322,17 +321,17 @@ export default function RobotSelectorModal({
 
                                             {/* Robot Info */}
                                             <div className="flex-1 text-left min-w-0">
-                                                <span className="block text-sm font-medium text-slate-400 truncate group-hover:text-slate-300 transition-colors">
+                                                <span className="block text-sm font-medium text-slate-700 dark:text-slate-400 truncate group-hover:text-slate-700 dark:text-slate-300 transition-colors">
                                                     {robot.displayName}
                                                 </span>
                                                 <div className="flex items-center gap-1.5 mt-0.5">
                                                     {robot.rbDevice && (
-                                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-500/10 text-slate-500 font-mono">
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-500/10 text-slate-500 font-mono">
                                                             {robot.rbDevice.device_code}
                                                         </span>
                                                     )}
                                                     {robot.uiDevice && (
-                                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-500/10 text-slate-500 font-mono">
+                                                        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-500/10 text-slate-500 font-mono">
                                                             UI
                                                         </span>
                                                     )}
@@ -364,7 +363,7 @@ export default function RobotSelectorModal({
                         </div>
 
                         {/* Footer */}
-                        <div className="px-4 py-3 bg-gradient-to-r from-sidebar to-card-bg border-t border-border-base">
+                        <div className="px-4 py-3 bg-gradient-to-r from-sidebar to-card-bg border-t border-border-base mt-auto">
                             <div className="flex items-center justify-between text-[10px] text-txt-sec">
                                 <span className="flex items-center gap-1.5">
                                     <span className="h-2 w-2 rounded-full bg-emerald-500" />

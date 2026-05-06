@@ -84,9 +84,9 @@ export default function AccountPage() {
 
     const getRoleColor = () => {
         if (profile?.role === "admin") {
-            return "bg-blue-500/10 text-blue-400 border-blue-500/20";
+            return "bg-blue-100 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-500/20";
         }
-        return "bg-indigo-500/10 text-indigo-400 border-indigo-500/20";
+        return "bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-300 dark:border-indigo-500/20";
     };
 
     const formatDate = (dateString: string) => {
@@ -127,7 +127,7 @@ export default function AccountPage() {
             <div className="glass-panel rounded-2xl p-6">
                 <div className="flex items-start gap-6">
                     {/* Avatar */}
-                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-500/30 flex items-center justify-center text-2xl font-bold text-white shadow-xl shadow-blue-900/20 flex-shrink-0">
+                    <div className="h-20 w-20 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-300 dark:border-blue-500/30 flex items-center justify-center text-2xl font-bold text-white shadow-xl shadow-blue-900/20 flex-shrink-0">
                         {profile?.email.charAt(0).toUpperCase()}
                     </div>
 
@@ -180,8 +180,8 @@ export default function AccountPage() {
                 {message && (
                     <div
                         className={`p-4 rounded-lg mb-4 text-sm flex items-center gap-2 ${message.type === "success"
-                            ? "bg-emerald-500/10 border border-emerald-500/20 text-emerald-400"
-                            : "bg-rose-500/10 border border-rose-500/20 text-rose-400"
+                            ? "bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400"
+                            : "bg-rose-100 dark:bg-rose-500/10 border border-rose-300 dark:border-rose-500/20 text-rose-700 dark:text-rose-400"
                             }`}
                     >
                         {message.type === "success" ? (

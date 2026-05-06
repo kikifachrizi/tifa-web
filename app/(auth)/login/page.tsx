@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "@/lib/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useLanguage } from "@/components/LanguageProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
@@ -35,32 +36,21 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-white">
-      {/* Left Side - Forgix Branding */}
-      <div className="relative hidden lg:flex flex-col justify-end p-12 overflow-hidden bg-gradient-to-br from-[#2C3A50] to-[#1a252f]">
+      {/* Left Side - Diagonal Branding */}
+      <div className="relative hidden lg:flex flex-col justify-end p-12 overflow-hidden bg-gradient-to-br from-[#0a0a0a] via-[#111] to-[#0d0d0d]">
         {/* Decorative Elements */}
-        <div className="absolute top-[20%] right-[20%] w-96 h-96 bg-[#2FAEB7]/20 rounded-full blur-[100px]" />
-        <div className="absolute bottom-[30%] left-[10%] w-80 h-80 bg-[#20C5D0]/15 rounded-full blur-[80px]" />
+        <div className="absolute top-[20%] right-[20%] w-96 h-96 bg-white/10 rounded-full blur-[100px]" />
+        <div className="absolute bottom-[30%] left-[10%] w-80 h-80 bg-white/5 rounded-full blur-[80px]" />
 
         {/* Decorative circles */}
         <div className="absolute top-[30%] right-[25%] w-48 h-48 border border-white/10 rounded-full" />
-        <div className="absolute top-[40%] right-[30%] w-32 h-32 border border-[#2FAEB7]/20 rounded-full" />
+        <div className="absolute top-[40%] right-[30%] w-32 h-32 border border-white/5 rounded-full" />
 
         {/* Content */}
-        <div className="relative z-10 max-w-lg mb-10 animate-slide-up">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#2FAEB7]/20 border border-[#2FAEB7]/30 text-[#20C5D0] text-sm font-medium mb-6">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#20C5D0] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[#2FAEB7]"></span>
-            </span>
-            {dict.common.online}
-          </div>
-
+        <div className="relative z-10 max-w-lg mb-6 animate-slide-up">
           {/* Logo */}
-          <div className="flex items-center gap-3 mb-6">
-            <div className="h-14 w-14 rounded-xl bg-gradient-to-br from-[#2FAEB7] to-[#20C5D0] flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-              F
-            </div>
-            <span className="text-3xl font-bold text-white">Forgix</span>
+          <div className="flex items-center mb-4 -ml-4 lg:-ml-6">
+            <Image src="/logo/logo white copy.png" alt="Diagonal Robotic Solution" width={380} height={110} className="h-24 lg:h-28 w-auto object-contain" priority />
           </div>
 
           <h1 className="text-4xl font-bold text-white tracking-tight mb-4">
@@ -80,7 +70,7 @@ export default function LoginPage() {
         {/* Back Button */}
         <Link
           href="/"
-          className="absolute top-6 left-6 z-20 flex items-center gap-2 text-sm text-gray-500 hover:text-[#2FAEB7] transition-colors group"
+          className="absolute top-6 left-6 z-20 flex items-center gap-2 text-sm text-gray-500 hover:text-[#1A1A1A] transition-colors group"
         >
           <svg className="w-5 h-5 transition-transform group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -97,16 +87,13 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-8 animate-fade-in">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-[#2FAEB7] to-[#20C5D0] flex items-center justify-center text-white text-xl font-bold">
-                F
-              </div>
-              <span className="text-2xl font-bold text-[#2C3A50]">Forgix</span>
+            <div className="flex items-center justify-center mb-4">
+              <Image src="/logo/WhatsApp Image 2026-04-27 at 08.20.58.jpeg" alt="Diagonal Robotic Solution" width={180} height={50} className="h-10 w-auto object-contain" priority />
             </div>
           </div>
 
           <div className="text-center">
-            <h2 className="text-2xl font-bold tracking-tight text-[#2C3A50] mb-2">
+            <h2 className="text-2xl font-bold tracking-tight text-[#1A1A1A] mb-2">
               {dict.auth.login.title}
             </h2>
             <p className="text-sm text-gray-500">
@@ -132,7 +119,7 @@ export default function LoginPage() {
                 </label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-[#2FAEB7] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-[#1A1A1A] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                     </svg>
                   </div>
@@ -144,7 +131,7 @@ export default function LoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-[#2C3A50] placeholder:text-gray-400 focus:border-[#2FAEB7] focus:ring-2 focus:ring-[#2FAEB7]/20 focus:outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-[#1A1A1A] placeholder:text-gray-400 focus:border-[#1A1A1A] focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all"
                     placeholder="name@company.com"
                   />
                 </div>
@@ -159,7 +146,7 @@ export default function LoginPage() {
                 </div>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-[#2FAEB7] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="h-5 w-5 text-gray-400 group-focus-within:text-[#1A1A1A] transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                   </div>
@@ -171,13 +158,13 @@ export default function LoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-12 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-[#2C3A50] placeholder:text-gray-400 focus:border-[#2FAEB7] focus:ring-2 focus:ring-[#2FAEB7]/20 focus:outline-none transition-all"
+                    className="w-full pl-10 pr-12 py-3 rounded-xl text-sm bg-gray-50 border border-gray-200 text-[#1A1A1A] placeholder:text-gray-400 focus:border-[#1A1A1A] focus:ring-2 focus:ring-gray-200 focus:outline-none transition-all"
                     placeholder="••••••••"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[#2FAEB7] transition-colors focus:outline-none"
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-[#1A1A1A] transition-colors focus:outline-none"
                   >
                     {showPassword ? (
                       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -197,7 +184,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-[#2FAEB7] to-[#20C5D0] hover:from-[#20C5D0] hover:to-[#2FAEB7] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2FAEB7] shadow-lg shadow-[#2FAEB7]/30 disabled:opacity-70 disabled:cursor-not-allowed transition-all hover:scale-[1.01]"
+              className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-semibold rounded-xl text-white bg-[#1A1A1A] hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 shadow-lg shadow-gray-200 disabled:opacity-70 disabled:cursor-not-allowed transition-all hover:scale-[1.01]"
             >
               {loading ? (
                 <div className="flex items-center gap-2">
@@ -218,11 +205,8 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500 mt-6">
-            {dict.auth.login.no_account}{" "}
-            <Link href="/register" className="font-semibold text-[#2FAEB7] hover:text-[#20C5D0] transition-colors">
-              {dict.auth.login.register_link}
-            </Link>
+          <p className="text-center text-xs text-gray-400 mt-6">
+            {dict.auth.login.admin_only}
           </p>
         </div>
       </div>

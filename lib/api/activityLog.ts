@@ -93,7 +93,7 @@ export async function getActivityLogs(
             }
 
             // Generate activity message
-            let message = row.status_message || row.command_code || 'Unknown activity';
+            const message = row.status_message || row.command_code || 'Unknown activity';
 
             // Analyze sentiment from the message
             const sentiment = analyzeSentiment(row.status_message);

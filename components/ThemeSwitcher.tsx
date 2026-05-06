@@ -8,7 +8,7 @@ export default function ThemeSwitcher() {
     return (
         <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-white transition-colors backdrop-blur-sm"
+            className="p-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 text-slate-700 dark:text-slate-400 hover:text-black dark:hover:text-white transition-colors backdrop-blur-sm"
             aria-label="Toggle Theme"
             title={theme === "dark" ? "Switch to Light Mode" : "Switch to Dark Mode"}
         >

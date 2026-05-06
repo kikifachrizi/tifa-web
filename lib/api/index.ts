@@ -30,11 +30,12 @@ export type {
     BatteryBuckets,
     DashboardStats,
     ActivityData,
+    HourlyBatteryData,
     CreateRobotInput,
     UpdateRobotInput,
     AuthUser,
     SignInResult,
-    SignUpResult,
+
     ApiResult,
     ActivityLog,
     RobotSummary,
@@ -43,6 +44,8 @@ export type {
     NotificationType,
     GroupedRobot,
     GroupedRobotWithStatus,
+    WsTraffic,
+    WsTrafficCode,
 } from '@/lib/types/database';
 
 
@@ -62,6 +65,7 @@ export {
     getLatestBatteries,
     getLatestBattery,
     getBatteryStats,
+    getHourlyBatteryData,
     // Command operations
     getCommandLogs,
     getErrorCount,
@@ -70,7 +74,7 @@ export {
     getNotifications,
     // Auth operations
     signIn,
-    signUp,
+
     signOut,
     getCurrentUser,
     updateUserProfile,
@@ -101,6 +105,7 @@ export {
     getMapById,
     getMapsByFloor,
     getMapCount,
+    uploadMapFull,
     // Per-robot summary operations
     getRobotSummary,
     getActiveRobotsWithStatus,
@@ -114,7 +119,33 @@ export {
     getSystemNotifications,
     getUnreadNotificationsCount,
     getLowBatteryNotifications,
+    // Robot control operations
+    getTableGoalsForMap,
+    getAllGoalsForMap,
+    sendRobotToTable,
+    sendRobotToMove,
+    sendTeleopCommand,
+    getActiveRobotTasks,
+    getTaskHistory,
+    markTaskAsDone,
+    setActiveMapForDevice,
+    sendMapSelectedCommand,
+    // WS Traffic operations
+    getWsTrafficLogs,
+    getLatestWsTrafficPerDevice,
+    getRecentWsTraffic,
+    getLatestWsStatus,
+    // Live Mapping operations
+    sendMappingCommand,
+    saveDraftGoal,
+    getDraftGoals,
+    createDestination,
+    updateDestination,
+    deleteDestination,
 } from '@/lib/client-api';
+
+// Re-export robot control types
+export type { SendToTablePayload, SendToMovePayload, SendToTableResponse, TeleopPayload } from '@/lib/client-api';
 
 // Robot grouping utilities (client-side data transformation)
 export {

@@ -1,11 +1,11 @@
 // Robot Grouping Utility
 // Groups RB and UI_TIFA_ devices that share the same numeric ID
-// Example: RB001 + UI_TIFA_001 = grouped robot "TIFA-001"
+// Example: TFUI1 + TFRB1 = grouped robot "TIFA-001"
 
 import type { Robot, DeviceStatus } from '@/lib/types/database';
 
 // Extract numeric ID from device code
-// RB001 -> "001", UI_TIFA_001 -> "001", RB0012 -> "0012"
+// TFUI1 -> "001", TFRB1 -> "001", TFUI12 -> "0012"
 export function extractRobotId(deviceCode: string): string | null {
     // Match RB followed by digits
     const rbMatch = deviceCode.match(/^RB(\d+)$/i);
@@ -14,6 +14,14 @@ export function extractRobotId(deviceCode: string): string | null {
     // Match UI_TIFA_ followed by digits
     const uiMatch = deviceCode.match(/^UI_TIFA_(\d+)$/i);
     if (uiMatch) return uiMatch[1];
+
+    // Match TFUI followed by digits (Tablet UI app = apps_id)
+    const tfuiMatch = deviceCode.match(/^TFUI(\d+)$/i);
+    if (tfuiMatch) return tfuiMatch[1];
+
+    // Match TFRB followed by digits (Robot hardware = robot_id)
+    const tfrbMatch = deviceCode.match(/^TFRB(\d+)$/i);
+    if (tfrbMatch) return tfrbMatch[1];
 
     return null;
 }
@@ -28,8 +36,9 @@ export function normalizeRobotId(id: string): string {
 export type DeviceType = 'RB' | 'UI_TIFA' | 'OTHER';
 
 export function getDeviceType(deviceCode: string): DeviceType {
-    if (deviceCode.toUpperCase().startsWith('RB')) return 'RB';
-    if (deviceCode.toUpperCase().startsWith('UI_TIFA_')) return 'UI_TIFA';
+    const code = deviceCode.toUpperCase();
+    if (code.startsWith('RB') || code.startsWith('TFRB')) return 'RB';
+    if (code.startsWith('UI_TIFA_') || code.startsWith('TFUI')) return 'UI_TIFA';
     return 'OTHER';
 }
 
@@ -47,7 +56,8 @@ export type GroupedRobot = {
 // Grouped robot with status
 export type GroupedRobotWithStatus = GroupedRobot & {
     isOnline: boolean;         // true if any component is online
-    battery: number | null;    // from RB device preferably
+    battery: number | null;    // from RB device preferably (SoC)
+    batteryLevel: number | null; // from RB device preferably (SoH)
     mode: string | null;       // current robot mode
     localIp: string | null;    // IP from any available device
     localSsid: string | null;  // SSID from any available device
@@ -129,13 +139,14 @@ export function groupRobots(robots: Robot[]): GroupedRobot[] {
 export function addStatusToGroupedRobots(
     groupedRobots: GroupedRobot[],
     deviceStatuses: Map<number, DeviceStatus>,
-    onlineThresholdMs: number = 5 * 60 * 1000 // 5 minutes default
+    onlineThresholdMs: number = 10 * 60 * 1000 // 10 minutes — accounts for WS traffic-based detection
 ): GroupedRobotWithStatus[] {
     const now = Date.now();
 
     return groupedRobots.map(group => {
         let isOnline = false;
         let battery: number | null = null;
+        let batteryLevel: number | null = null;
         let mode: string | null = null;
         let localIp: string | null = null;
         let localSsid: string | null = null;
@@ -156,6 +167,7 @@ export function addStatusToGroupedRobots(
             if (status?.battery_percent !== null && status?.battery_percent !== undefined) {
                 if (battery === null || getDeviceType(device.device_code) === 'RB') {
                     battery = status.battery_percent;
+                    batteryLevel = status.battery_level ?? null;
                 }
             }
 
@@ -177,6 +189,7 @@ export function addStatusToGroupedRobots(
             ...group,
             isOnline,
             battery,
+            batteryLevel,
             mode,
             localIp,
             localSsid,

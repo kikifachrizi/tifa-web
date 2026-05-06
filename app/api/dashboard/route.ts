@@ -3,7 +3,9 @@ import { getDashboardStats } from '@/lib/api/dashboard';
 import { getDeviceStatus } from '@/lib/api/deviceStatus';
 import { getBatteryHistory } from '@/lib/api/battery';
 import { query } from '@/lib/dbClient';
-import type { RobotSummary, BatteryBuckets } from '@/lib/types/database';
+import type { RobotSummary } from '@/lib/types/database';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);

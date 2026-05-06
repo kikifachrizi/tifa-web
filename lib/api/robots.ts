@@ -1,23 +1,38 @@
 // Robot API - Abstraction layer for robot/device operations
 // Uses PostgreSQL via pg package
 
-import { query, queryWithCount } from '@/lib/dbClient';
+import { query } from '@/lib/dbClient';
 import type { Robot, DeviceInfo, CreateRobotInput, UpdateRobotInput, ApiResult } from '@/lib/types/database';
+
+// Whitelist of device codes that are considered part of the robot fleet.
+// Only these devices will appear on the Armada Robot / Daftar Robot page.
+// TIFA-001 = TFUI1 + TFRB1, TIFA-002 = RB002 + UI_TIFA_002
+const ALLOWED_DEVICE_CODES = ['TFUI1', 'TFRB1', 'RB002', 'UI_TIFA_002'];
+
+// Helper: generate IN clause placeholders starting from a given param index
+// e.g. buildInClause(1, 4) => { clause: "$1, $2, $3, $4", nextIndex: 5 }
+function buildInClause(startIndex: number, count: number) {
+    const placeholders = Array.from({ length: count }, (_, i) => `$${startIndex + i}`).join(', ');
+    return { clause: placeholders, nextIndex: startIndex + count };
+}
 
 /**
  * Get all robots with optional search filter
  */
 export async function getRobots(search?: string): Promise<ApiResult<Robot[]>> {
     try {
+        const { clause, nextIndex } = buildInClause(1, ALLOWED_DEVICE_CODES.length);
+        const params: (string | number)[] = [...ALLOWED_DEVICE_CODES];
+
         let sql = `
             SELECT device_id, device_name, device_code, company_id, active_map_id, 
                    robot_local_ip, robot_local_ssid, created_at, updated_at
             FROM m_device
+            WHERE device_code IN (${clause})
         `;
-        const params: (string | number)[] = [];
 
         if (search?.trim()) {
-            sql += ` WHERE device_name ILIKE $1 OR device_code ILIKE $1`;
+            sql += ` AND (device_name ILIKE $${nextIndex} OR device_code ILIKE $${nextIndex})`;
             params.push(`%${search.trim()}%`);
         }
 
@@ -25,8 +40,14 @@ export async function getRobots(search?: string): Promise<ApiResult<Robot[]>> {
 
         const data = await query<Robot>(sql, params);
 
+        // Override device_name for TFUI1 for UI display
+        const transformedData = data.map(robot => ({
+            ...robot,
+            device_name: robot.device_code === 'TFUI1' ? 'TIFA' : robot.device_name
+        }));
+
         return {
-            data,
+            data: transformedData,
             error: null,
         };
     } catch (err: unknown) {
@@ -51,8 +72,15 @@ export async function getRobotById(id: number): Promise<ApiResult<DeviceInfo>> {
             [id]
         );
 
+        const device = rows[0] ?? null;
+
+        // Override device_name for TFUI1 for UI display
+        if (device && device.device_code === 'TFUI1') {
+            device.device_name = 'TIFA';
+        }
+
         return {
-            data: rows[0] ?? null,
+            data: device,
             error: null,
         };
     } catch (err: unknown) {
@@ -69,17 +97,26 @@ export async function getRobotById(id: number): Promise<ApiResult<DeviceInfo>> {
  */
 export async function getRecentRobots(limit: number = 5): Promise<ApiResult<Robot[]>> {
     try {
+        const { clause, nextIndex } = buildInClause(1, ALLOWED_DEVICE_CODES.length);
+
         const data = await query<Robot>(
             `SELECT device_id, device_name, device_code, robot_local_ip, robot_local_ssid, 
                     company_id, active_map_id, created_at, updated_at
              FROM m_device
+             WHERE device_code IN (${clause})
              ORDER BY created_at DESC
-             LIMIT $1`,
-            [limit]
+             LIMIT $${nextIndex}`,
+            [...ALLOWED_DEVICE_CODES, limit]
         );
 
+        // Override device_name for TFUI1 for UI display
+        const transformedData = data.map(robot => ({
+            ...robot,
+            device_name: robot.device_code === 'TFUI1' ? 'TIFA' : robot.device_name
+        }));
+
         return {
-            data,
+            data: transformedData,
             error: null,
         };
     } catch (err: unknown) {
@@ -180,12 +217,15 @@ export async function deleteRobot(id: number): Promise<ApiResult<null>> {
 }
 
 /**
- * Count total robots
+ * Count total robots (only whitelisted fleet)
  */
 export async function getRobotCount(): Promise<ApiResult<number>> {
     try {
+        const { clause } = buildInClause(1, ALLOWED_DEVICE_CODES.length);
+
         const rows = await query<{ count: string }>(
-            `SELECT COUNT(*) as count FROM m_device`
+            `SELECT COUNT(*) as count FROM m_device WHERE device_code IN (${clause})`,
+            [...ALLOWED_DEVICE_CODES]
         );
 
         return {

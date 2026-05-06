@@ -3,11 +3,11 @@
 import { useLanguage } from "./LanguageProvider";
 
 interface LandingLanguageSwitcherProps {
-    theme?: 'forgix' | 'tifa';
+    theme?: 'diagonal' | 'tifa';
     isScrolled?: boolean;
 }
 
-export default function LandingLanguageSwitcher({ theme = 'forgix', isScrolled = false }: LandingLanguageSwitcherProps) {
+export default function LandingLanguageSwitcher({ theme = 'diagonal', isScrolled = false }: LandingLanguageSwitcherProps) {
     const { language, setLanguage } = useLanguage();
 
     const isTifa = theme === 'tifa';
@@ -17,10 +17,10 @@ export default function LandingLanguageSwitcher({ theme = 'forgix', isScrolled =
         if (isActive) {
             return isTifa
                 ? "bg-[#B6252A] text-white shadow-sm"
-                : "bg-[#2FAEB7] text-white shadow-sm";
+                : "bg-[#1A1A1A] text-white shadow-sm";
         }
         if (isScrolled && !isTifa) {
-            return "text-[#2C3A50] hover:bg-gray-100";
+            return "text-[#1A1A1A] hover:bg-gray-100";
         }
         return "text-white/70 hover:text-white hover:bg-white/10";
     };

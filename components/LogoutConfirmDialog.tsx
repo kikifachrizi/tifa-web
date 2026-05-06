@@ -61,7 +61,7 @@ export default function LogoutConfirmDialog({
             >
                 {/* Icon */}
                 <div className="flex justify-center mb-4">
-                    <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center">
+                    <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-500/10 border border-rose-300 dark:border-rose-500/20 flex items-center justify-center">
                         <svg
                             className="w-8 h-8 text-rose-500"
                             fill="none"

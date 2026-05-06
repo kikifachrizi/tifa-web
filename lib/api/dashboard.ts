@@ -21,7 +21,7 @@ export async function getDashboardStats(): Promise<ApiResult<DashboardStats>> {
             getRobotCount(),
             getBatteryStats(),
             getErrorCount(),
-            getCommandLogs(5),
+            getCommandLogs(20),
             getRecentRobots(5),
         ]);
 

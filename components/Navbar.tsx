@@ -88,12 +88,6 @@ export default function Navbar() {
 
                     <Link
                         href="/login"
-                        className="hidden sm:block px-4 py-2 text-sm font-medium text-txt-sec hover:text-txt-main transition-colors"
-                    >
-                        {dict.landing.nav.signin}
-                    </Link>
-                    <Link
-                        href="/register"
                         className="hidden sm:block px-5 py-2.5 text-sm font-semibold text-white bg-[#325FEB] rounded-lg hover:bg-[#608FFF] transition-all shadow-lg shadow-[#325FEB]/30 ring-1 ring-white/10 hover-lift"
                     >
                         {dict.landing.nav.get_started}

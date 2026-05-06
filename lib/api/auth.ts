@@ -3,7 +3,7 @@
 // Note: For production, implement proper JWT or session-based auth
 
 import { query } from '@/lib/dbClient';
-import type { AuthUser, SignInResult, SignUpResult, ApiResult } from '@/lib/types/database';
+import type { AuthUser, SignInResult, ApiResult } from '@/lib/types/database';
 
 // Simple in-memory session store (for development only)
 // In production, use proper session management (cookies, JWT, etc.)
@@ -74,62 +74,13 @@ export async function signIn(email: string, password: string): Promise<SignInRes
         };
     } catch (err: unknown) {
         const error = err as Error;
-        console.error("SignUp Error:", error);
+        console.error("SignIn Error:", error);
         return { success: false, error: error.message ?? 'Database error' };
     }
 }
 
-/**
- * Sign up new user
- * Note: For production, implement proper password hashing
- */
-export async function signUp(email: string, password: string, role: 'admin' | 'operator'): Promise<SignUpResult> {
-    try {
-        // Check if user already exists
-        const existingUsers = await query<{ user_id: number }>(
-            `SELECT user_id FROM t_user WHERE email = $1 OR username = $1`,
-            [email]
-        );
-
-        if (existingUsers.length > 0) {
-            return { success: false, error: "User already exists" };
-        }
-
-        // Create new user (in production, hash the password)
-        const newUsers = await query<{ user_id: number }>(
-            `INSERT INTO t_user (username, email, password_hash, display_name, is_active)
-             VALUES ($1, $2, $3, $4, true)
-             RETURNING user_id`,
-            [email, email, password, email]
-        );
-
-        if (newUsers.length === 0) {
-            return { success: false, error: "Failed to create user" };
-        }
-
-        const userId = newUsers[0].user_id;
-
-        // Get role_id for the specified role
-        const roles = await query<{ role_id: number }>(
-            `SELECT role_id FROM m_role WHERE LOWER(role_code) = $1`,
-            [role.toLowerCase()]
-        );
-
-        if (roles.length > 0) {
-            // Assign role to user
-            await query(
-                `INSERT INTO t_user_role (user_id, role_id) VALUES ($1, $2)`,
-                [userId, roles[0].role_id]
-            );
-        }
-
-        return { success: true };
-    } catch (err: unknown) {
-        const error = err as Error;
-        console.error("SignUp Error:", error);
-        return { success: false, error: error.message ?? 'Database error' };
-    }
-}
+// signUp function removed — registration is disabled.
+// Only pre-registered admin/operator users in the database can log in.
 
 /**
  * Sign out current user

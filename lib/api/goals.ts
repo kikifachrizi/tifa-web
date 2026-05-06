@@ -143,3 +143,66 @@ export async function countGoalsByType(): Promise<ApiResult<Record<string, numbe
         };
     }
 }
+
+/**
+ * Create a new goal for a map
+ */
+export async function createGoal(
+    mapId: number | null,
+    goalName: string,
+    goalCode: string,
+    goalType: string,
+    x: number,
+    y: number,
+    yaw: number
+): Promise<ApiResult<Goal>> {
+    try {
+        const result = await query<Goal>(
+            `INSERT INTO m_goal (map_id, goal_name, goal_code, goal_type, x, y, yaw, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+             RETURNING *`,
+            [mapId, goalName, goalCode || goalName, goalType || 'CUSTOM', x, y, yaw]
+        );
+        return { data: result[0], error: null };
+    } catch (err: unknown) {
+        return { data: null, error: (err as Error).message ?? 'Database error' };
+    }
+}
+
+/**
+ * Update an existing goal
+ */
+export async function updateGoal(
+    goalId: number,
+    goalName: string,
+    goalCode: string,
+    goalType: string,
+    x: number,
+    y: number,
+    yaw: number
+): Promise<ApiResult<Goal>> {
+    try {
+        const result = await query<Goal>(
+            `UPDATE m_goal 
+             SET goal_name = $1, goal_code = $2, goal_type = $3, x = $4, y = $5, yaw = $6
+             WHERE goal_id = $7
+             RETURNING *`,
+            [goalName, goalCode || goalName, goalType || 'CUSTOM', x, y, yaw, goalId]
+        );
+        return { data: result[0], error: null };
+    } catch (err: unknown) {
+        return { data: null, error: (err as Error).message ?? 'Database error' };
+    }
+}
+
+/**
+ * Delete a goal (Hard Delete)
+ */
+export async function deleteGoal(goalId: number): Promise<ApiResult<{ deleted: boolean }>> {
+    try {
+        await query(`DELETE FROM m_goal WHERE goal_id = $1`, [goalId]);
+        return { data: { deleted: true }, error: null };
+    } catch (err: unknown) {
+        return { data: null, error: (err as Error).message ?? 'Database error' };
+    }
+}

@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getAllDeviceStatus, getLowBatteryDevices, getDevicesByMode } from '@/lib/api/deviceStatus';
 
+export const dynamic = 'force-dynamic';
+
+
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');

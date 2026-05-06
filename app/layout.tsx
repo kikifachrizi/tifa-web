@@ -12,12 +12,12 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Forgix - Robotics Agency | Smart Manufacturing Solutions",
+  title: "Diagonal - Robotics Agency | Smart Manufacturing Solutions",
   description:
-    "Forgix is a leading robotics agency specializing in AMR (Autonomous Mobile Robots) and Industry 4.0 solutions. Discover TIFA - Tel-U Interactive Food Assistant and other innovative robotics products.",
-  keywords: "robotics, AMR, autonomous mobile robot, TIFA, Industry 4.0, smart manufacturing, Forgix",
+    "Diagonal is a leading robotics agency specializing in AMR (Autonomous Mobile Robots) and Industry 4.0 solutions. Discover TIFA - Tel-U Interactive Food Assistant and other innovative robotics products.",
+  keywords: "robotics, AMR, autonomous mobile robot, TIFA, Industry 4.0, smart manufacturing, Diagonal",
   openGraph: {
-    title: "Forgix - Robotics as Your Partner in Smart Manufacturing",
+    title: "Diagonal - Robotics as Your Partner in Smart Manufacturing",
     description: "Building smarter industries through robotics and automation solutions.",
     type: "website",
   },

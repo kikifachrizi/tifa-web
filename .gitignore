@@ -39,3 +39,15 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# logs & temp files
+*.log
+*.txt
+cred_input.*
+
+# python (websocket client etc.)
+__pycache__/
+*.py
+
+# raw design assets (keep locally, exclude from repo)
+ASET WEB/

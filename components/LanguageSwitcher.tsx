@@ -11,7 +11,7 @@ export default function LanguageSwitcher() {
                 onClick={() => setLanguage("id")}
                 className={`px-2 py-1 text-xs font-bold rounded-md transition-all ${language === "id"
                         ? "bg-blue-600 text-white shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                        : "text-slate-700 dark:text-slate-400 hover:text-white hover:bg-white/5"
                     }`}
             >
                 ID
@@ -20,7 +20,7 @@ export default function LanguageSwitcher() {
                 onClick={() => setLanguage("en")}
                 className={`px-2 py-1 text-xs font-bold rounded-md transition-all ${language === "en"
                         ? "bg-blue-600 text-white shadow-sm"
-                        : "text-slate-400 hover:text-white hover:bg-white/5"
+                        : "text-slate-700 dark:text-slate-400 hover:text-white hover:bg-white/5"
                     }`}
             >
                 EN

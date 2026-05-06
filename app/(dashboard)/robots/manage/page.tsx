@@ -32,6 +32,7 @@ export default function ManageRobotsPage() {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         void loadRobots();
     }, []);
 
@@ -134,7 +135,7 @@ export default function ManageRobotsPage() {
                         resetForm();
                         setFormOpen(true);
                     }}
-                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/20 hover:bg-blue-500 transition-all border border-blue-500/30"
+                    className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-900/20 hover:bg-blue-500 transition-all border border-blue-300 dark:border-blue-500/30"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -146,7 +147,7 @@ export default function ManageRobotsPage() {
             {/* Success Message */}
             {success && (
                 <div className="p-4 rounded-xl bg-emerald-900/20 border border-emerald-900/50 backdrop-blur-sm flex items-center gap-2">
-                    <svg className="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-emerald-700 dark:text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
                     <p className="text-sm text-emerald-200 font-medium">{success}</p>
@@ -289,7 +290,7 @@ export default function ManageRobotsPage() {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleEdit(robot)}
-                                                    className="p-1.5 rounded-lg text-txt-sec hover:bg-blue-500/10 hover:text-blue-400 transition-colors"
+                                                    className="p-1.5 rounded-lg text-txt-sec hover:bg-blue-100 dark:bg-blue-500/10 hover:text-blue-700 dark:text-blue-400 transition-colors"
                                                     title="Edit"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -299,7 +300,7 @@ export default function ManageRobotsPage() {
                                                 <button
                                                     type="button"
                                                     onClick={() => handleDelete(robot.device_id, robot.device_name ?? "Unknown")}
-                                                    className="p-1.5 rounded-lg text-txt-sec hover:bg-rose-500/10 hover:text-rose-400 transition-colors"
+                                                    className="p-1.5 rounded-lg text-txt-sec hover:bg-rose-100 dark:bg-rose-500/10 hover:text-rose-700 dark:text-rose-400 transition-colors"
                                                     title="Delete"
                                                 >
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

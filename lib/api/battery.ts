@@ -16,7 +16,7 @@ export async function getBatteryHistory(
         const rows = await query<BatteryRow>(
             `SELECT h_battery_id,
                     device_id,
-                    battery_percent,
+                    COALESCE(((raw_payload->'data')->>'battery_percent')::numeric, battery_percent) AS battery_percent,
                     voltage,
                     recorded_at,
                     raw_payload
@@ -44,7 +44,7 @@ export async function getLatestBatteries(
         const rows = await query<BatteryRow>(
             `SELECT h_battery_id,
                     device_id,
-                    battery_percent,
+                    COALESCE(((raw_payload->'data')->>'battery_percent')::numeric, battery_percent) AS battery_percent,
                     voltage,
                     recorded_at,
                     raw_payload
@@ -71,7 +71,7 @@ export async function getLatestBattery(
         const rows = await query<BatteryRow>(
             `SELECT h_battery_id,
                     device_id,
-                    battery_percent,
+                    COALESCE(((raw_payload->'data')->>'battery_percent')::numeric, battery_percent) AS battery_percent,
                     voltage,
                     recorded_at,
                     raw_payload
@@ -128,4 +128,143 @@ export async function getBatteryStats(): Promise<ApiResult<{ avgBattery: number 
         data: { avgBattery, buckets },
         error: null,
     };
+}
+
+/**
+ * Hourly battery data for activity monitor overlay.
+ * Returns average battery_percent per hour for today (Jakarta time).
+ */
+export type HourlyBatteryData = {
+    hour: number;
+    avg_battery: number;
+    label: string;
+};
+
+export async function getHourlyBatteryData(
+    deviceId: number,
+    range: '1d' | '1w' | '1m' | '3m' = '1d'
+): Promise<ApiResult<HourlyBatteryData[]>> {
+    try {
+        const tz = 'Asia/Jakarta';
+
+        if (range === '1d') {
+            const rows = await query<{ hr: string; avg_bat: string }>(
+                `SELECT
+                    EXTRACT(HOUR FROM recorded_at AT TIME ZONE $1)::int AS hr,
+                    ROUND(AVG(
+                        COALESCE(
+                            ((raw_payload->'data'->>'battery_percent')::numeric),
+                            battery_percent
+                        )
+                    ), 1) AS avg_bat
+                 FROM h_battery
+                 WHERE device_id = $2
+                   AND recorded_at >= (DATE_TRUNC('day', NOW() AT TIME ZONE $1) AT TIME ZONE $1)
+                 GROUP BY hr
+                 ORDER BY hr`,
+                [tz, deviceId]
+            );
+
+            // Determine current hour in Jakarta timezone
+            const jakartaNow = new Date(Date.now() + 7 * 60 * 60 * 1000 + new Date().getTimezoneOffset() * 60000);
+            const currentHour = jakartaNow.getHours();
+
+            const batMap = new Map<number, number>();
+            rows.forEach(r => batMap.set(Number(r.hr), Number(r.avg_bat)));
+
+            // Find last known battery before today to start the line smoothly
+            let lastKnownBat = -1;
+            const lastBatRow = await query<{ battery_percent: number }>(
+                `SELECT COALESCE(((raw_payload->'data'->>'battery_percent')::numeric), battery_percent) as battery_percent
+                 FROM h_battery 
+                 WHERE device_id = $1 AND recorded_at < (DATE_TRUNC('day', NOW() AT TIME ZONE $2) AT TIME ZONE $2)
+                 ORDER BY recorded_at DESC LIMIT 1`,
+                [deviceId, tz]
+            );
+            if (lastBatRow.length > 0) {
+                lastKnownBat = Number(lastBatRow[0].battery_percent);
+            }
+
+            const result: HourlyBatteryData[] = [];
+            for (let i = 0; i <= currentHour; i++) {
+                const val = batMap.get(i);
+                if (val !== undefined) {
+                    lastKnownBat = val;
+                }
+                result.push({
+                    hour: i,
+                    avg_battery: lastKnownBat, 
+                    label: `${i.toString().padStart(2, '0')}:00`,
+                });
+            }
+            return { data: result, error: null };
+        } else {
+            // For weekly/monthly/3-month, aggregate per day
+            const intervalMap: Record<string, string> = {
+                '1w': '7 days',
+                '1m': '30 days',
+                '3m': '90 days',
+            };
+            const interval = intervalMap[range] ?? '7 days';
+            const days = range === '1w' ? 7 : range === '1m' ? 30 : 90;
+
+            const rows = await query<{ d: string; avg_bat: string }>(
+                `SELECT
+                    (recorded_at AT TIME ZONE $1)::date::text AS d,
+                    ROUND(AVG(
+                        COALESCE(
+                            ((raw_payload->'data'->>'battery_percent')::numeric),
+                            battery_percent
+                        )
+                    ), 1) AS avg_bat
+                 FROM h_battery
+                 WHERE device_id = $2
+                   AND recorded_at >= (NOW() - INTERVAL '${interval}')
+                 GROUP BY d
+                 ORDER BY d`,
+                [tz, deviceId]
+            );
+
+            const batMap = new Map<string, number>();
+            rows.forEach(r => batMap.set(r.d, Number(r.avg_bat)));
+
+            const jakartaOffset = 7 * 60;
+            const now = new Date();
+            const localNow = new Date(now.getTime() + (jakartaOffset + now.getTimezoneOffset()) * 60000);
+
+            // Find last known battery before the range to start the line smoothly
+            let lastKnownBat = -1;
+            const lastBatRow = await query<{ battery_percent: number }>(
+                `SELECT COALESCE(((raw_payload->'data'->>'battery_percent')::numeric), battery_percent) as battery_percent
+                 FROM h_battery 
+                 WHERE device_id = $1 AND recorded_at < (NOW() - INTERVAL '${interval}')
+                 ORDER BY recorded_at DESC LIMIT 1`,
+                [deviceId]
+            );
+            if (lastBatRow.length > 0) {
+                lastKnownBat = Number(lastBatRow[0].battery_percent);
+            }
+
+            const result: HourlyBatteryData[] = [];
+            for (let i = days - 1; i >= 0; i--) {
+                const d = new Date(localNow.getTime() - i * 24 * 60 * 60 * 1000);
+                const dateKey = `${d.getFullYear()}-${(d.getMonth() + 1).toString().padStart(2, '0')}-${d.getDate().toString().padStart(2, '0')}`;
+                
+                const val = batMap.get(dateKey);
+                if (val !== undefined) {
+                    lastKnownBat = val;
+                }
+                
+                result.push({
+                    hour: days - 1 - i,
+                    avg_battery: lastKnownBat,
+                    label: `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`,
+                });
+            }
+            return { data: result, error: null };
+        }
+    } catch (err: unknown) {
+        const error = err as Error;
+        return { data: null, error: error.message ?? 'Database error' };
+    }
 }

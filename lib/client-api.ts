@@ -17,16 +17,18 @@ import type {
     GoalQueue,
     Map,
     ActivityData,
+    HourlyBatteryData,
     AuthUser,
     SignInResult,
-    SignUpResult,
+
     CreateRobotInput,
     UpdateRobotInput,
     ApiResult,
     ActivityLog,
     RobotSummary,
     SystemNotification,
-    SentimentType
+    SentimentType,
+    WsTraffic,
 } from '@/lib/types/database';
 
 
@@ -168,8 +170,13 @@ export async function getErrorCount(): Promise<ApiResult<number>> {
     return res.json();
 }
 
-export async function getActivityData(deviceId: number): Promise<ApiResult<ActivityData[]>> {
-    const res = await fetch(`${BASE_URL}/commands?action=activity&deviceId=${deviceId}`);
+export async function getActivityData(deviceId: number, range: string = '1d'): Promise<ApiResult<ActivityData[]>> {
+    const res = await fetch(`${BASE_URL}/commands?action=activity&deviceId=${deviceId}&range=${range}`);
+    return res.json();
+}
+
+export async function getHourlyBatteryData(deviceId: number, range: string = '1d'): Promise<ApiResult<HourlyBatteryData[]>> {
+    const res = await fetch(`${BASE_URL}/battery?action=hourly-battery&deviceId=${deviceId}&range=${range}`);
     return res.json();
 }
 
@@ -245,6 +252,31 @@ export async function countGoalsByType(): Promise<ApiResult<Record<string, numbe
     return res.json();
 }
 
+export async function createDestination(payload: Record<string, unknown>): Promise<ApiResult<Goal>> {
+    const res = await fetch(`${BASE_URL}/goals?action=create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    return res.json();
+}
+
+export async function updateDestination(payload: Record<string, unknown>): Promise<ApiResult<Goal>> {
+    const res = await fetch(`${BASE_URL}/goals?action=update`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+    });
+    return res.json();
+}
+
+export async function deleteDestination(goalId: number): Promise<ApiResult<{ deleted: boolean }>> {
+    const res = await fetch(`${BASE_URL}/goals?action=delete&id=${goalId}`, {
+        method: 'DELETE',
+    });
+    return res.json();
+}
+
 // ============================================
 // MAP OPERATIONS
 // ============================================
@@ -269,6 +301,19 @@ export async function getMapCount(): Promise<ApiResult<number>> {
     return res.json();
 }
 
+export async function uploadMapFull(formData: FormData): Promise<ApiResult<Record<string, unknown>>> {
+    try {
+        const res = await fetch(`${BASE_URL}/maps/upload`, {
+            method: 'POST',
+            body: formData,
+            // DO NOT set Content-Type header manually here; the browser needs to set it to 'multipart/form-data; boundary=...' automatically
+        });
+        return res.json();
+    } catch (error: unknown) {
+        return { data: null, error: error instanceof Error ? error.message : 'Network error fetching map upload proxy' };
+    }
+}
+
 // ============================================
 // AUTH OPERATIONS
 // ============================================
@@ -282,14 +327,7 @@ export async function signIn(email: string, password: string): Promise<SignInRes
     return res.json();
 }
 
-export async function signUp(email: string, password: string, role: 'admin' | 'operator'): Promise<SignUpResult> {
-    const res = await fetch(`${BASE_URL}/auth?action=signup`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, role }),
-    });
-    return res.json();
-}
+// signUp removed — registration is disabled
 
 export async function signOut(): Promise<ApiResult<null>> {
     const res = await fetch(`${BASE_URL}/auth?action=signout`, {
@@ -376,4 +414,323 @@ export async function getUnreadNotificationsCount(): Promise<ApiResult<number>> 
 export async function getLowBatteryNotifications(): Promise<ApiResult<SystemNotification[]>> {
     const res = await fetch(`${BASE_URL}/notifications?action=low-battery`);
     return res.json();
+}
+
+// ============================================
+// ROBOT CONTROL OPERATIONS
+// ============================================
+
+export async function getTableGoalsForMap(mapId: number): Promise<ApiResult<Goal[]>> {
+    const res = await fetch(`${BASE_URL}/robot-control?action=table-goals&mapId=${mapId}`, {
+        cache: 'no-store',
+        headers: {
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache'
+        }
+    });
+    return res.json();
+}
+
+export async function getAllGoalsForMap(mapId: number): Promise<ApiResult<Goal[]>> {
+    const res = await fetch(`${BASE_URL}/robot-control?action=all-goals&mapId=${mapId}`, {
+        cache: 'no-store'
+    });
+    return res.json();
+}
+
+export type SendToTableTask = {
+    goal_id: number;
+    tray: number;
+};
+
+export type SendToTablePayload = {
+    device_id: number;
+    tasks: SendToTableTask[];
+    map_id: number;
+    robot_id: string;    // e.g. "TFRB1"
+    origin_id: string;   // e.g. "TFWB1"
+    speed?: string;      // 'S' | 'F' | 'VF' — navigation speed level
+};
+
+export type SendToTableResponse = {
+    queue_id: number;
+    ws_sent: boolean;
+    ws_error?: string;
+};
+
+/**
+ * Send robot to a specific table
+ * Encodes payload in Base64 as per supervisor's architecture guidance
+ */
+export async function sendRobotToTable(payload: SendToTablePayload): Promise<ApiResult<SendToTableResponse>> {
+    // Encode payload to Base64 for safe transport (decoded in backend before WS send)
+    const encoded_payload = btoa(JSON.stringify(payload));
+
+    const res = await fetch(`${BASE_URL}/robot-control`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ encoded_payload }),
+    });
+    return res.json();
+}
+
+export type SendToMovePayload = {
+    device_id: number;
+    goal_id: number;
+    goal_type: 'HOMEBASE' | 'CHARGING';
+    map_id: number;
+    robot_id: string;
+    origin_id: string;
+};
+
+/**
+ * Send robot to homebase or charging station (MOVE command)
+ * Encodes payload in Base64
+ */
+export async function sendRobotToMove(payload: SendToMovePayload): Promise<ApiResult<SendToTableResponse>> {
+    const encoded_payload = btoa(JSON.stringify(payload));
+    const res = await fetch(`${BASE_URL}/robot-control?action=move`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ encoded_payload }),
+    });
+    return res.json();
+}
+
+
+/**
+ * Send teleop (manual movement) command to robot
+ * High-frequency — not logged to database
+ */
+export type TeleopPayload = {
+    robot_id: string;
+    origin_id: string;
+    linear: { x: number; y: number; z: number };
+    angular: { x: number; y: number; z: number };
+    speed?: string;
+};
+
+/**
+ * Send mapping command to the robot (MAPPING_START, MAPPING_SAVE, MAPPING_STOP)
+ * Encoded in Base64
+ */
+export async function sendMappingCommand(payload: Record<string, unknown>): Promise<ApiResult<Record<string, unknown>>> {
+    const encoded_payload = btoa(JSON.stringify(payload));
+    const res = await fetch(`${BASE_URL}/robot-control?action=mapping`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ encoded_payload }),
+    });
+    return res.json();
+}
+
+/**
+ * Save draft goal during Live Mapping
+ */
+export async function saveDraftGoal(data: { sessionToken: string, goalName: string, goalCode?: string, goalType?: string, x: number, y: number, yaw: number, z?: number, deviceId: number }): Promise<ApiResult<Goal>> {
+    const res = await fetch(`${BASE_URL}/goals?action=draft-goal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    return res.json();
+}
+
+/**
+ * Get draft goals by session token
+ */
+export async function getDraftGoals(sessionToken: string): Promise<ApiResult<Goal[]>> {
+    const res = await fetch(`${BASE_URL}/goals?action=drafts-by-session&sessionToken=${encodeURIComponent(sessionToken)}`);
+    return res.json();
+}
+
+export async function sendTeleopCommand(payload: TeleopPayload): Promise<{ sent: boolean; error?: string }> {
+    const fullPayload = {
+        code: 'TELEOP' as const,
+        data: {
+            robot_id: payload.robot_id,
+            web_id: 'TFWB1',
+            linear: payload.linear,
+            angular: payload.angular,
+            speed: payload.speed || 'S'
+        }
+    };
+
+    const encoded_payload = btoa(JSON.stringify(fullPayload));
+
+    const res = await fetch(`${BASE_URL}/robot-control?action=teleop`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ encoded_payload }),
+    });
+    return res.json();
+}
+
+export type TeleopDonePayload = {
+    robot_id: string;
+    origin_id: string;
+};
+
+export async function sendTeleopDoneCommand(payload: TeleopDonePayload): Promise<{ sent: boolean; error?: string }> {
+    const fullPayload = {
+        code: 'TELEOP_DONE' as const,
+        data: {
+            robot_id: payload.robot_id,
+            web_id: 'TFWB1',
+            status: 'COMPLETED'
+        }
+    };
+
+    const encoded_payload = btoa(JSON.stringify(fullPayload));
+
+    const res = await fetch(`${BASE_URL}/robot-control?action=teleop-done`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ encoded_payload }),
+    });
+    return res.json();
+}
+
+export async function getActiveRobotTasks(deviceId: number): Promise<ApiResult<GoalQueue[]>> {
+    const res = await fetch(`${BASE_URL}/robot-control?action=active-tasks&deviceId=${deviceId}`);
+    return res.json();
+}
+
+export async function getTaskHistory(deviceId: number, days: number = 7): Promise<ApiResult<(GoalQueue & { day_label?: string })[]>> {
+    const res = await fetch(`${BASE_URL}/robot-control?action=task-history&deviceId=${deviceId}&days=${days}`);
+    return res.json();
+}
+
+export async function markTaskAsDone(goalQueueId: number): Promise<ApiResult<boolean>> {
+    const res = await fetch(`${BASE_URL}/robot-control?action=mark-done`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goalQueueId }),
+    });
+    return res.json();
+}
+
+/**
+ * Set the active map for a device (persists to database)
+ */
+export async function setActiveMapForDevice(deviceId: number, mapId: number): Promise<ApiResult<boolean>> {
+    const res = await fetch(`${BASE_URL}/robot-control?action=set-active-map`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceId, mapId }),
+    });
+    return res.json();
+}
+
+/**
+ * Send MAP_SELECTED payload via WebSocket when activating a map
+ */
+export async function sendMapSelectedCommand(payload: { robot_id: string, map_id: number }): Promise<{ ws: boolean; ws_error?: string }> {
+    const now = new Date().toISOString();
+    const fullPayload = {
+        code: 'MAP_SELECTED',
+        data: {
+            robot_id: payload.robot_id,
+            map_id: Number(payload.map_id),
+            timestamp: now
+        },
+        origin: 'UI',
+        origin_id: 'TFWB1',
+        timestamp: now,
+        message_id: crypto.randomUUID()
+    };
+
+    const encoded_payload = btoa(JSON.stringify(fullPayload));
+    const res = await fetch(`${BASE_URL}/robot-control?action=map-selected`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ encoded_payload }),
+    });
+    return res.json();
+}
+
+// ============================================
+// WS TRAFFIC OPERATIONS
+// ============================================
+
+export async function getWsTrafficLogs(range: string = '1d', deviceId?: number): Promise<ApiResult<WsTraffic[]>> {
+    const params = new URLSearchParams({ action: 'logs-by-range', range });
+    if (deviceId !== undefined) params.set('deviceId', deviceId.toString());
+    const res = await fetch(`${BASE_URL}/ws-traffic?${params}`);
+    return res.json();
+}
+
+export async function getLatestWsTrafficPerDevice(): Promise<ApiResult<WsTraffic[]>> {
+    const res = await fetch(`${BASE_URL}/ws-traffic?action=latest-per-device`);
+    return res.json();
+}
+
+export async function getLatestWsStatus(deviceId: number): Promise<ApiResult<{ isOnline: boolean; lastStatus: string; recordedAt: string }>> {
+    const res = await fetch(`${BASE_URL}/ws-traffic?action=latest-status&deviceId=${deviceId}`);
+    return res.json();
+}
+
+export async function getRecentWsTraffic(limit: number = 10, deviceId?: number): Promise<ApiResult<WsTraffic[]>> {
+    const params = new URLSearchParams({ limit: limit.toString() });
+    if (deviceId !== undefined) params.set('deviceId', deviceId.toString());
+    const res = await fetch(`${BASE_URL}/ws-traffic?${params}`);
+    return res.json();
+}
+
+export async function sendTalkCommand(payload: { robot_id: string, origin_id: string, action: 'TALK_ON' | 'TALK_OFF' }): Promise<{ sent: boolean; error?: string }> {
+    // 1. Payload for STT/TTS Server
+    const serverPayload = {
+        code: 'CONTROL',
+        data: {
+            type: 'control',
+            web_id: 'TFWB1',
+            action: payload.action,
+            robot_id: 'SERVERAI001'
+        },
+        origin: 'UI',
+        origin_id: 'TFWB1'
+    };
+    const encodedServerPayload = btoa(JSON.stringify(serverPayload));
+
+    // 2. Payload for Tablet App (as requested by PM)
+    const tabletPayload = {
+        code: 'CONTROL',
+        data: {
+            type: 'control',
+            web_id: 'TFWB1',
+            action: payload.action,
+            robot_id: 'TABLET001'
+        },
+        origin: 'UI',
+        origin_id: 'TFWB1'
+    };
+    const encodedTabletPayload = btoa(JSON.stringify(tabletPayload));
+
+    // Send both commands concurrently
+    try {
+        const [resServer, resTablet] = await Promise.all([
+            fetch(`${BASE_URL}/robot-control?action=talk`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ encoded_payload: encodedServerPayload }),
+            }),
+            fetch(`${BASE_URL}/robot-control?action=talk`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ encoded_payload: encodedTabletPayload }),
+            })
+        ]);
+
+        const dataServer = await resServer.json();
+        const dataTablet = await resTablet.json();
+
+        // If both failed
+        if (!dataServer.sent && !dataTablet.sent) {
+            return { sent: false, error: dataServer.error || dataTablet.error || 'Failed to send to both Server and Tablet' };
+        }
+
+        return { sent: true };
+    } catch (e: unknown) {
+        return { sent: false, error: e instanceof Error ? e.message : 'Unknown error' };
+    }
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { signIn, signUp, signOut, getCurrentUser, updateUserProfile } from '@/lib/api/auth';
+import { signIn, signOut, getCurrentUser, updateUserProfile } from '@/lib/api/auth';
 
 export async function POST(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -12,8 +12,7 @@ export async function POST(request: Request) {
     }
 
     if (action === 'signup') {
-        const result = await signUp(body.email, body.password, body.role);
-        return NextResponse.json(result);
+        return NextResponse.json({ success: false, error: 'Registration is disabled. Contact administrator.' }, { status: 403 });
     }
 
     if (action === 'signout') {

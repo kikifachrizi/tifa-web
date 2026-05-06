@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from "react";
 import { Dictionary, en, id } from "@/lib/dictionaries";
-import { forgixEn, forgixId, ForgixDictionary } from "@/lib/dictionaries-forgix";
+import { diagonalEn, diagonalId, DiagonalDictionary } from "@/lib/dictionaries-diagonal";
 import { tifaEn, tifaId, TifaDictionary } from "@/lib/dictionaries-tifa";
 
 type Language = "en" | "id";
@@ -10,7 +10,7 @@ type Language = "en" | "id";
 interface LanguageContextType {
     language: Language;
     dict: Dictionary;
-    forgixDict: ForgixDictionary;
+    diagonalDict: DiagonalDictionary;
     tifaDict: TifaDictionary;
     setLanguage: (lang: Language) => void;
 }
@@ -23,9 +23,9 @@ const dictionaries: Record<Language, Dictionary> = {
     id
 };
 
-const forgixDictionaries: Record<Language, ForgixDictionary> = {
-    en: forgixEn,
-    id: forgixId
+const diagonalDictionaries: Record<Language, DiagonalDictionary> = {
+    en: diagonalEn,
+    id: diagonalId
 };
 
 const tifaDictionaries: Record<Language, TifaDictionary> = {
@@ -41,6 +41,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     useEffect(() => {
         const savedLang = localStorage.getItem("tifa_language") as Language;
         if (savedLang && (savedLang === "en" || savedLang === "id")) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLanguageState(savedLang);
         }
         setMounted(true);
@@ -54,17 +55,17 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
     // Memoized dictionary lookup
     const dict = useMemo(() => dictionaries[language], [language]);
-    const forgixDict = useMemo(() => forgixDictionaries[language], [language]);
+    const diagonalDict = useMemo(() => diagonalDictionaries[language], [language]);
     const tifaDict = useMemo(() => tifaDictionaries[language], [language]);
 
     // Memoized context value
     const value = useMemo(() => ({
         language,
         dict,
-        forgixDict,
+        diagonalDict,
         tifaDict,
         setLanguage
-    }), [language, dict, forgixDict, tifaDict, setLanguage]);
+    }), [language, dict, diagonalDict, tifaDict, setLanguage]);
 
     // Prevent flash of wrong language
     if (!mounted) {

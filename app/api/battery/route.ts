@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getBatteryHistory, getLatestBatteries, getBatteryStats } from '@/lib/api/battery';
+import { getBatteryHistory, getLatestBatteries, getBatteryStats, getHourlyBatteryData } from '@/lib/api/battery';
 import type { BatteryBuckets } from '@/lib/types/database';
 
 export async function GET(request: Request) {
@@ -10,6 +10,12 @@ export async function GET(request: Request) {
 
     if (action === 'history' && deviceId) {
         const result = await getBatteryHistory(parseInt(deviceId, 10), limit);
+        return NextResponse.json(result);
+    }
+
+    if (action === 'hourly-battery' && deviceId) {
+        const range = (searchParams.get('range') ?? '1d') as '1d' | '1w' | '1m' | '3m';
+        const result = await getHourlyBatteryData(parseInt(deviceId, 10), range);
         return NextResponse.json(result);
     }
 

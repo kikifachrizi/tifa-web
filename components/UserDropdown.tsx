@@ -30,9 +30,9 @@ export default function UserDropdown({
     // Get role color
     const getRoleColor = () => {
         if (role === "admin") {
-            return "text-blue-400";
+            return "text-blue-700 dark:text-blue-400";
         }
-        return "text-indigo-400";
+        return "text-indigo-700 dark:text-indigo-400";
     };
 
     // Close dropdown when clicking outside
@@ -78,7 +78,7 @@ export default function UserDropdown({
                 </div>
 
                 {/* Avatar */}
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-500/30 flex items-center justify-center text-[12px] font-semibold text-white shadow-lg shadow-blue-900/20">
+                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-300 dark:border-blue-500/30 flex items-center justify-center text-[12px] font-semibold text-white shadow-lg shadow-blue-900/20">
                     {email.charAt(0).toUpperCase()}
                 </div>
 
@@ -99,7 +99,7 @@ export default function UserDropdown({
                     {/* User Info Header */}
                     <div className="px-4 py-3 border-b border-border-base bg-sidebar">
                         <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-500/30 flex items-center justify-center text-sm font-semibold text-white">
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 border border-blue-300 dark:border-blue-500/30 flex items-center justify-center text-sm font-semibold text-white">
                                 {email.charAt(0).toUpperCase()}
                             </div>
                             <div className="flex-1 min-w-0">
@@ -132,28 +132,6 @@ export default function UserDropdown({
                             {dict.dashboard.account?.manage || "Kelola Akun"}
                         </Link>
 
-                        {/* Settings */}
-                        <Link
-                            href="/settings"
-                            onClick={() => setIsOpen(false)}
-                            className="flex items-center gap-3 px-4 py-2.5 text-sm text-txt-sec hover:bg-card-bg hover:text-txt-main transition-colors"
-                        >
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={1.5}
-                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                                />
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={1.5}
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                />
-                            </svg>
-                            {dict.dashboard.sidebar.settings}
-                        </Link>
 
                         {/* Divider */}
                         <div className="my-2 border-t border-border-base" />
@@ -165,7 +143,7 @@ export default function UserDropdown({
                                 setIsOpen(false);
                                 onLogoutClick();
                             }}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-400 hover:bg-rose-500/10 transition-colors"
+                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:bg-rose-500/10 transition-colors"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path

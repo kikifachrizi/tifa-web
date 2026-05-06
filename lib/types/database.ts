@@ -9,6 +9,7 @@ export type ConnectionType = 'CLOUD_WS' | 'ROBOT_LOCAL_WS' | 'OTHER';
 export type GoalQueueStatus = 'QUEUED' | 'IN_PROGRESS' | 'DONE' | 'FAILED' | 'CANCELLED';
 export type GoalType = 'TABLE' | 'CHARGE' | 'HOME' | 'CUSTOM';
 export type RobotMode = 'IDLE' | 'MOVING' | 'CHARGING' | 'MAPPING' | 'RETURNING_HOME' | 'ERROR' | 'PAUSED';
+export type WsTrafficCode = 'INIT' | 'READY' | 'ERROR' | 'DISCONNECT' | 'SI';
 
 // ============================================
 // MASTER DATA (m_*)
@@ -122,6 +123,16 @@ export type ConnectionLog = {
     session_info: object | null;
 };
 
+export type WsTraffic = {
+    h_ws_traffic_id: number;
+    device_id: number | null;
+    direction: string | null;
+    code: WsTrafficCode | string;
+    payload: object | null;
+    remote_addr: string | null;
+    recorded_at: string;
+};
+
 // ============================================
 // TRANSACTIONS (t_*)
 // ============================================
@@ -170,6 +181,7 @@ export type DeviceStatus = {
     last_y: number | null;
     last_yaw: number | null;
     battery_percent: number | null;
+    battery_level: number | null;
     robot_mode: RobotMode | null;
     robot_activity: string | null;
     status_updated_at: string | null;
@@ -209,6 +221,13 @@ export type DashboardStats = {
 export type ActivityData = {
     hour: number;
     count: number;
+    label?: string;
+};
+
+export type HourlyBatteryData = {
+    hour: number;
+    avg_battery: number;
+    label: string;
 };
 
 // ============================================
@@ -295,7 +314,7 @@ export type RobotSummary = {
 // SYSTEM NOTIFICATIONS
 // ============================================
 
-export type NotificationType = 'low_battery' | 'error' | 'activity' | 'system';
+export type NotificationType = 'low_battery' | 'error' | 'activity' | 'system' | 'ws_traffic';
 
 export type SystemNotification = {
     id: string;

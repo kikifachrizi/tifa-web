@@ -4,12 +4,13 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { getCurrentUser, signOut as apiSignOut, type User } from "@/lib/api";
+import { getCurrentUser, signOut as apiSignOut } from "@/lib/api";
 import { useLanguage } from "@/components/LanguageProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import UserDropdown from "@/components/UserDropdown";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
+import RobotReadyToast from "@/components/RobotReadyToast";
 
 type UserInfo = {
   id: string;
@@ -28,12 +29,20 @@ export default function DashboardLayout({
 
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const savedState = localStorage.getItem('sidebarCollapsed');
     if (savedState) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSidebarCollapsed(JSON.parse(savedState));
     }
   }, []);
@@ -106,21 +115,20 @@ export default function DashboardLayout({
       ),
     },
     {
+      href: "/robots/maps",
+      label: dict.dashboard.sidebar.manage_maps,
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+        </svg>
+      ),
+    },
+    {
       href: "/notifications",
       label: dict.dashboard.sidebar.notifications,
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-        </svg>
-      ),
-    },
-    {
-      href: "/settings",
-      label: dict.dashboard.sidebar.settings,
-      icon: (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
         </svg>
       ),
     },
@@ -136,26 +144,36 @@ export default function DashboardLayout({
         loading={loggingOut}
       />
 
-      {/* Sidebar - Uses semantic vars - GPU optimized */}
+      {/* Global Robot Status Toast */}
+      <RobotReadyToast />
+
+      {/* Mobile Sidebar Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden backdrop-blur-sm transition-opacity"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - Forced Dark Theme to match reference UI */}
       <aside
-        className={`bg-sidebar border-r border-border-base flex flex-col sidebar-transition relative z-10 gpu-accelerated ${sidebarCollapsed ? 'w-20' : 'w-64'
-          }`}
+        className={`bg-[#0a0a0a] border-r border-[#222] flex flex-col sidebar-transition fixed inset-y-0 left-0 z-50 lg:relative lg:z-10 gpu-accelerated ${sidebarCollapsed ? 'w-20' : 'w-64'} ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
         style={{ contain: 'layout' }}
       >
         {/* Logo */}
-        <div className="px-4 py-6 border-b border-border-base">
+        <div className="px-5 py-5 border-b border-[#222]">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#2FAEB7] to-[#20C5D0] flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-[#2FAEB7]/20 flex-shrink-0 border border-[#20C5D0]/20">
-              F
-            </div>
-            {!sidebarCollapsed && (
-              <div className="overflow-hidden">
-                <h1 className="text-sm font-semibold tracking-tight text-txt-main">
-                  Forgix Dashboard
-                </h1>
-                <p className="text-[11px] text-txt-sec truncate">
-                  Robot Monitoring
-                </p>
+            {!sidebarCollapsed ? (
+              <div className="flex items-center justify-center w-full">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logo/logo white copy.png" alt="Diagonal Robotic Solution" className="h-14 lg:h-16 w-auto object-contain" />
+              </div>
+            ) : (
+              <div className="flex items-center justify-center w-full">
+                <div className="h-10 w-10 rounded-2xl bg-white flex items-center justify-center shadow-lg p-1">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/logo/LOGO BLACK.png" alt="D" className="w-full h-full object-contain scale-[1.5]" />
+                </div>
               </div>
             )}
           </div>
@@ -164,7 +182,7 @@ export default function DashboardLayout({
         {/* Toggle Button */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="mx-3 mt-4 mb-2 p-2 rounded-lg bg-card-bg hover:bg-primary-glow text-txt-sec hover:text-txt-main transition-colors flex items-center justify-center border border-border-base hover:border-border-highlight"
+          className="mx-3 mt-4 mb-2 p-2 rounded-lg bg-[#111] hover:bg-[#222] text-gray-400 hover:text-white transition-colors flex items-center justify-center border border-[#333]"
         >
           <svg
             className={`w-5 h-5 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`}
@@ -191,26 +209,36 @@ export default function DashboardLayout({
         </nav>
 
         {/* Footer */}
-        <div className={`px-4 py-4 border-t border-border-base text-[11px] text-txt-sec ${sidebarCollapsed ? 'text-center' : ''}`}>
+        <div className={`px-4 py-4 border-t border-[#222] text-[11px] text-gray-500 ${sidebarCollapsed ? 'text-center' : ''}`}>
           {sidebarCollapsed ? (
             <span>©</span>
           ) : (
-            <span>© {new Date().getFullYear()} Forgix</span>
+            <span>© {new Date().getFullYear()} Diagonal</span>
           )}
         </div>
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-0 relative z-0">
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 relative z-0">
         {/* Header - Semi transparent glass - optimized */}
-        <header className="h-16 border-b border-border-base bg-card-bg/80 backdrop-blur-sm flex items-center justify-between px-6 flex-shrink-0 z-20 transition-colors duration-300 gpu-accelerated">
-          <div>
-            <p className="text-xs font-medium text-txt-accent uppercase tracking-wider">
-              {dict.dashboard.header.status}
-            </p>
-            <p className="text-[11px] text-txt-sec">
-              {dict.dashboard.header.monitoring}
-            </p>
+        <header className="h-16 border-b border-border-base bg-card-bg/80 backdrop-blur-sm flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-20 transition-colors duration-300 gpu-accelerated">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="lg:hidden p-2 -ml-2 text-txt-sec hover:text-txt-main rounded-lg transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            <div>
+              <p className="text-xs font-medium text-txt-accent uppercase tracking-wider hidden sm:block">
+                {dict.dashboard.header.status}
+              </p>
+              <p className="text-[11px] text-txt-sec hidden sm:block">
+                {dict.dashboard.header.monitoring}
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             {/* Theme & Language Switchers */}
@@ -255,25 +283,25 @@ function SidebarLink({
   return (
     <Link
       href={href}
-      className={`group relative flex items-center gap-3 rounded-lg px-3 py-2.5 transition-all duration-300 ${active
-        ? "bg-primary-glow text-txt-accent border border-border-highlight"
-        : "text-txt-sec hover:bg-card-bg hover:text-txt-main border border-transparent"
+      className={`group relative flex items-center gap-3 rounded-xl px-3 py-3 transition-all duration-300 ${active
+        ? "bg-white text-[#0a0a0a] shadow-md"
+        : "text-gray-400 hover:bg-[#151515] hover:text-white"
         }`}
       title={collapsed ? label : undefined}
     >
-      <span className={`flex-shrink-0 transition-colors ${active ? 'text-txt-accent drop-shadow-[0_0_8px_rgba(59,130,246,0.5)]' : 'group-hover:text-txt-main'}`}>
+      <span className={`flex-shrink-0 transition-colors ${active ? 'text-[#0a0a0a]' : 'group-hover:text-white'}`}>
         {icon}
       </span>
       {!collapsed && (
-        <span className="text-sm font-medium truncate">{label}</span>
+        <span className="text-sm font-semibold truncate">{label}</span>
       )}
       {active && (
-        <div className="absolute left-0 bottom-0 top-0 w-0.5 bg-[#2FAEB7] rounded-r shadow-[0_0_10px_rgba(47,174,183,0.8)]" />
+        <div className="absolute left-0 bottom-0 top-0 w-1.5 bg-cyan-400 rounded-r-md shadow-[0_0_10px_rgba(34,211,238,0.5)]" />
       )}
 
       {/* Tooltip for collapsed state */}
       {collapsed && (
-        <div className="absolute left-full ml-3 px-3 py-1.5 bg-sidebar text-txt-main text-xs rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl border border-border-base">
+        <div className="absolute left-full ml-3 px-3 py-1.5 bg-[#1A1A1A] text-white text-xs rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl border border-[#333]">
           {label}
         </div>
       )}

@@ -1,8 +1,10 @@
 # TIFA Dashboard — Ringkasan Lengkap Program
 
+> **Last Updated**: May 2026 · **Version**: 0.1.0 · **Repo**: [forgixrobotic/tifa-web](https://github.com/forgixrobotic/tifa-web)
+
 ## Overview
 
-**TIFA Dashboard** adalah web-based monitoring and control system untuk robot TIFA (Tel-U Interactive Food Assistant) yang dikembangkan oleh **Diagonal Robotic**. Dashboard ini memungkinkan operator untuk memantau status armada robot secara real-time, mengirim perintah navigasi ke meja tujuan, mengontrol robot secara manual (teleop), melakukan live mapping, serta mengelola peta dan destinasi.
+**TIFA Dashboard** adalah web-based monitoring and control system untuk robot TIFA (Tel-U Interactive Food Assistant) yang dikembangkan oleh **Diagonal Robotic Solution**. Dashboard ini memungkinkan operator untuk memantau status armada robot secara real-time, mengirim perintah navigasi ke meja tujuan, mengontrol robot secara manual (teleop), melakukan live mapping, serta mengelola peta dan destinasi.
 
 Sistem dibangun menggunakan **Next.js 16** dengan App Router, **PostgreSQL** sebagai database utama (diakses via Cloudflare Tunnel), dan **WebSocket** untuk komunikasi real-time dengan robot.
 
@@ -71,7 +73,7 @@ Root layout ada di `app/layout.tsx`, dan landing page Diagonal (company profile)
 
 Auth menggunakan layout group `(auth)/`:
 - **Login** di `app/(auth)/login/page.tsx` — centered form tanpa sidebar
-- **Register** di `app/(auth)/register/page.tsx` — saat ini **disabled**
+- **Register** di `app/(auth)/register/page.tsx` — saat ini **disabled** (hanya pre-registered users yang bisa login)
 
 ### Dashboard
 
@@ -100,13 +102,19 @@ Halaman-halaman dashboard:
 7. **Account** — `app/(dashboard)/account/page.tsx`
    View profil, change password, account info.
 
+### Landing Pages & Docs
+
+- **Diagonal Landing** — `app/page.tsx` — Company profile landing page dengan animasi cursor interaktif
+- **TIFA Landing** — `app/tifa/page.tsx` — Product showcase TIFA robot
+- **TIFA Documentation** — `app/tifa/docs/` — Dokumentasi produk TIFA dengan layout terpisah dan dark/light mode support
+
 ---
 
 ## 4. Frontend — Komponen Utama
 
 ### Robot Control Panel (`RobotControlPanel.tsx`)
 
-Komponen terbesar (~1042 baris) yang mengelola seluruh kontrol robot. Memiliki dua mode:
+Komponen terbesar (~85KB) yang mengelola seluruh kontrol robot. Memiliki dua mode:
 - **Navigation Mode** — Wizard 3 langkah: Pilih Tray (1-3) → Pilih Meja → Konfirmasi. Mendukung multi-tray, speed control (Slow/Fast/Very Fast), quick actions (Homebase/Charging), map selector dengan active map indicator, dan task queue monitoring.
 - **Teleop Mode** — Render komponen TeleopDpad untuk kontrol manual.
 
@@ -187,27 +195,36 @@ Semua API routes berada di `app/api/` dan mengembalikan JSON. Route utama:
 
 ### Database Client (`dbClient.ts`)
 
-PostgreSQL connection pool dengan max 20 koneksi, 30 detik idle timeout, dan 5 detik connection timeout. Menyediakan fungsi `query<T>(sql, params)` yang digunakan oleh semua API modules di `lib/api/`.
+PostgreSQL connection pool dengan max 20 koneksi, 30 detik idle timeout, dan 5 detik connection timeout. Menyediakan fungsi `query<T>(sql, params)` dan `queryWithCount<T>(sql, params)` yang digunakan oleh semua API modules di `lib/api/`.
+
+Dilengkapi dengan **auto-retry logic** pada error transient (ECONNRESET, ECONNREFUSED, ETIMEDOUT, EPIPE, EAI_AGAIN) — retry hingga 2x dengan exponential backoff (500ms → 1000ms). Juga menyediakan `transaction()` helper untuk operasi multi-query dengan auto commit/rollback, dan `testConnection()` untuk health check.
 
 ### WebSocket Manager (`wsClient.ts`)
 
-Pusat komunikasi WebSocket (~524 baris). Mengelola:
+Pusat komunikasi WebSocket (~611 baris). Mengelola:
 - Koneksi ke `wss://tifa-ws.forgixrobotic.com` dengan auto-reconnect setiap 5 detik
-- **Session Identity (SI)** handshake — mengirim payload SI dengan `apps_id: "TFWB1"` saat koneksi baru agar diakui server robot
+- **Session Identity (SI)** handshake — mengirim payload SI dengan `ui_id: "TFWB1"` saat koneksi baru agar diakui server robot
 - Base64 encode/decode payload via `encodePayload()` dan `decodePayload()`
-- Fungsi kirim command: `sendRobotCommand()`, `sendTeleopCommand()`, `sendTeleopDoneCommand()`, `sendMappingCommand()`, `sendTalkCommand()`
-- Event handling: ACK_SOFT (session established), ERROR, MAPPING_DONE (auto-log ke DB), voice status updates
-- Penanganan DUPLICATE_UI_ID dengan retry mechanism
+- Fungsi kirim command: `sendRobotCommand()`, `sendTeleopCommand()`, `sendTeleopDoneCommand()`, `sendTalkCommand()`
+- Event handling: ACK_SOFT (session established), ERROR, MAPPING_DONE (auto-log ke DB), ACK/INIT/DISCONNECT (auto-log ke `h_ws_traffic`), voice status updates
+- Penanganan DUPLICATE_UI_ID dengan progressive retry delay (3s → 5s → 10s)
+- Graceful shutdown handler (`SIGINT`/`SIGTERM`) untuk mencegah zombie connections saat Next.js hot reload
 
 ### Robot Control Logic (`robotControl.ts`)
 
-Logika utama kontrol robot (~644 baris). Fungsi-fungsi kunci:
+Logika utama kontrol robot (~850 baris). Fungsi-fungsi kunci:
 - `sendRobotToTable()` — Validasi goal, fetch home_base, build OP payload, insert queue, kirim via WS, log ke DB
 - `sendRobotToMove()` — Kirim MOVE command (homebase/charging)
-- `sendMappingCommand()` — Forward mapping command ke WS + log ke DB
+- `sendMappingCommand()` — Forward mapping command ke WS + log ke h_command_log + h_ws_traffic
+- `sendMapSelectedCommand()` — Kirim MAP_SELECTED ke robot via WS + log
+- `sendMapDataCommand()` — Kirim MAP_DATA (base64 ZIP) ke robot via WS
 - `logTeleopToCommandLog()` / `logTeleopDoneToCommandLog()` — Log teleop ke h_command_log
+- `logTalkToCommandLog()` — Log voice control command ke h_command_log + h_ws_traffic
+- `logMapSelectedToCommandLog()` — Log map selection ke h_command_log + h_ws_traffic
 - `setActiveMap()` — Update active_map_id pada kedua device (RB + UI_TIFA) sekaligus
-- `getTaskHistory()` — Riwayat task dengan auto-cancel task dari hari sebelumnya
+- `getActiveRobotTasks()` — Task aktif hari ini dengan auto-cancel task dari hari sebelumnya
+- `getTaskHistory()` — Riwayat task 7 hari terakhir
+- `markTaskAsDone()` — Tandai task sebagai selesai secara manual
 
 ### Client API Wrapper (`client-api.ts`)
 
@@ -682,7 +699,19 @@ Dua role tersedia: **Admin** (full system control) dan **Operator** (monitoring 
 
 ## 11. Deployment
 
-Database PostgreSQL berada di server remote dan diakses melalui **Cloudflare Tunnel**. Dev command sudah dikonfigurasi di `package.json` untuk menjalankan Next.js + tunnel secara bersamaan. Dokumentasi deployment lengkap ada di `CLOUDFLARE_TUNNEL_DEPLOYMENT.md`.
+Database PostgreSQL berada di server remote dan diakses melalui **Cloudflare Tunnel**. Dev command sudah dikonfigurasi di `package.json` untuk menjalankan Next.js + tunnel secara bersamaan:
+
+```json
+"dev": "npx concurrently -n \"next,tunnel\" -c \"cyan,magenta\" \"next dev\" \"cloudflared access tcp --hostname postgres.forgixrobotic.com --url localhost:5002\""
+```
 
 > [!TIP]
-> Pastikan `cloudflared` terinstall dan tunnel aktif sebelum menjalankan `npm run dev`. Tanpa tunnel, koneksi ke database akan gagal.
+> Pastikan `cloudflared` terinstall dan tunnel aktif sebelum menjalankan `npm run dev`. Tanpa tunnel, koneksi ke database akan gagal dengan error `ECONNRESET`.
+
+### Production Checklist
+
+- Set environment variables di server (bukan `.env.local`)
+- Jalankan `cloudflared` sebagai service
+- Pastikan WS broker `wss://tifa-ws.forgixrobotic.com` reachable
+- Test login dan verifikasi WebSocket session (`ACK_SOFT`)
+- Cek notifikasi dan WS traffic logs di dashboard

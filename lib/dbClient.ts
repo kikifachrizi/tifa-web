@@ -5,13 +5,19 @@
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg';
 
 // Database connection configuration from environment variables
+// IMPORTANT: Jangan menuliskan password atau kredensial sensitif secara hardcode di sini!
+// Semua nilai ini akan dibaca dari file .env.local (saat local) atau Environment Variables dashboard (saat deploy).
 const DB_CONFIG = {
-  host: process.env.DB_HOST ?? 'localhost',
-  port: parseInt(process.env.DB_PORT ?? '5002', 10),
-  database: process.env.DB_NAME ?? 'tifa',
-  user: process.env.DB_USER ?? 'tifa',
-  password: process.env.DB_PASS ?? 'TifaBot2025@',
+  host: process.env.DB_HOST,
+  port: parseInt(process.env.DB_PORT || '5432', 10),
+  database: process.env.DB_NAME,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
 };
+
+if (!process.env.DB_PASS || !process.env.DB_HOST) {
+  console.warn('[PostgreSQL] ⚠️ WARNING: Environment variables database (DB_HOST, DB_PASS, dll) belum di-set. Pastikan .env.local atau config deployment sudah benar.');
+}
 
 const pool = new Pool({
   ...DB_CONFIG,

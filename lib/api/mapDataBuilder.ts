@@ -90,7 +90,7 @@ export async function buildMapDataBase64(mapId: number): Promise<string | null> 
                     path.join('D:', 'data', 'maps', String(mapId), '1', `map.${file.file_type}`),
                     path.join('/opt', 'tifa', 'uploads', 'maps', String(mapId), '1', `map.${file.file_type}`),
                 ];
-                
+
                 const foundPath = altPaths.find(p => fs.existsSync(p));
                 if (foundPath) {
                     filePath = foundPath;
@@ -102,8 +102,14 @@ export async function buildMapDataBase64(mapId: number): Promise<string | null> 
 
             try {
                 const buffer = fs.readFileSync(filePath);
-                readableFiles.push({ name: file.file_name, buffer });
-                console.log(`[mapDataBuilder] ✅ Read file: ${file.file_name} (${buffer.length} bytes)`);
+
+                // Get the file extension from the original file name or file type
+                const extension = file.file_name.split('.').pop() || file.file_type || 'dat';
+                // User requirement: Always name the files map.pgm, map.yaml, etc. inside the ZIP
+                const uniformName = `map.${extension}`;
+
+                readableFiles.push({ name: uniformName, buffer });
+                console.log(`[mapDataBuilder] ✅ Read file: ${file.file_name} -> renamed to ${uniformName} inside ZIP (${buffer.length} bytes)`);
             } catch (readErr) {
                 console.warn(`[mapDataBuilder] Cannot read file ${filePath}:`, readErr);
             }

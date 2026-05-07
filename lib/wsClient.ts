@@ -70,6 +70,7 @@ export type MapSelectedCommandPayload = {
     code: 'MAP_SELECTED';
     data: {
         robot_id: string;
+        ui_id: string;       // Sender: TFWB1 (Web Dashboard)
         map_id: number;
         timestamp: string;
     };
@@ -83,6 +84,7 @@ export type MapDataCommandPayload = {
     code: 'MAP_DATA';
     data: {
         robot_id: string;
+        ui_id: string;       // Sender: TFWB1 (Web Dashboard)
         map_id: number;
         format: string;
         encoding: string;

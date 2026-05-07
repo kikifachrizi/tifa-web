@@ -106,7 +106,12 @@ export async function buildMapDataBase64(mapId: number): Promise<string | null> 
                 // Get the file extension from the original file name or file type
                 const extension = file.file_name.split('.').pop() || file.file_type || 'dat';
                 // User requirement: Always name the files map.pgm, map.yaml, etc. inside the ZIP
-                const uniformName = `map.${extension}`;
+                let uniformName = `map.${extension}`;
+
+                // Prevent duplicate names in the zip to avoid archiver crash
+                if (readableFiles.some(f => f.name === uniformName)) {
+                    uniformName = `map_extra_${file.g_file_id}.${extension}`;
+                }
 
                 readableFiles.push({ name: uniformName, buffer });
                 console.log(`[mapDataBuilder] ✅ Read file: ${file.file_name} -> renamed to ${uniformName} inside ZIP (${buffer.length} bytes)`);

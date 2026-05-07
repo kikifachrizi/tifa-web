@@ -91,8 +91,8 @@ export async function POST(request: Request) {
                 );
             }
 
-            // Override web_id with the active WS session ID to match SI handshake
-            payload.data.web_id = getWsUiId();
+            // Override ui_id with the active WS session ID to match SI handshake
+            payload.data.ui_id = getWsUiId();
 
             // Send directly via WebSocket
             const result = await sendTeleopCommand(payload);
@@ -312,8 +312,8 @@ export async function POST(request: Request) {
                 );
             }
 
-            // Override web_id with the active WS session ID to match SI handshake
-            payload.data.web_id = getWsUiId();
+            // Override ui_id with the active WS session ID to match SI handshake
+            payload.data.ui_id = getWsUiId();
 
             const result = await sendTeleopDoneCommand(payload);
 

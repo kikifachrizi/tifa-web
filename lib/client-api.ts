@@ -549,7 +549,7 @@ export async function sendTeleopCommand(payload: TeleopPayload): Promise<{ sent:
         code: 'TELEOP' as const,
         data: {
             robot_id: payload.robot_id,
-            web_id: 'TFWB1',
+            ui_id: 'TFWB1',
             linear: payload.linear,
             angular: payload.angular,
             speed: payload.speed || 'S'
@@ -576,7 +576,7 @@ export async function sendTeleopDoneCommand(payload: TeleopDonePayload): Promise
         code: 'TELEOP_DONE' as const,
         data: {
             robot_id: payload.robot_id,
-            web_id: 'TFWB1',
+            ui_id: 'TFWB1',
             status: 'COMPLETED'
         }
     };
@@ -683,7 +683,7 @@ export async function sendTalkCommand(payload: { robot_id: string, origin_id: st
         code: 'CONTROL',
         data: {
             type: 'control',
-            web_id: 'TFWB1',
+            ui_id: 'TFWB1',
             action: payload.action,
             robot_id: 'SERVERAI001'
         },
@@ -697,7 +697,7 @@ export async function sendTalkCommand(payload: { robot_id: string, origin_id: st
         code: 'CONTROL',
         data: {
             type: 'control',
-            web_id: 'TFWB1',
+            ui_id: 'TFWB1',
             action: payload.action,
             robot_id: 'TABLET001'
         },

@@ -159,16 +159,14 @@ export type TalkCommandPayload = {
 
 import type { WebSocket as WSClass } from 'ws';
 import { query } from '@/lib/dbClient';
+import { getSettings } from '@/lib/settings';
 
 // ============================================
 // WEBSOCKET CLIENT (lazy initialization)
 // ============================================
 
-const WS_ROBOT_URL = process.env.WS_ROBOT_URL ?? 'wss://tifa-ws.forgixrobotic.com';
-// Static UI ID for web dashboard — uses TFWB1 to avoid conflicts with mobile app.
-// Note: MOVE commands may require server-side authorization for this ID on the robot WS server.
-const WS_UI_ID = 'TFWB1';
-
+// Settings will be loaded dynamically inside connectWs/waitForConnection
+// Static fallback is only for type safety if needed, but getWsUiId now fetches real settings
 let wsInstance: WSClass | null = null;
 let isConnecting = false;
 let isSessionActive = false;  // tracks whether SI handshake completed
@@ -204,18 +202,21 @@ async function loadWebSocketModule() {
 function sendSessionIdentify() {
     if (!wsInstance || wsInstance.readyState !== 1) return;
 
+    const settings = getSettings();
+    const uiId = settings.uiId;
+
     const siPayload = {
         code: 'SI',
         data: {
             type: 'UI',
-            ui_id: WS_UI_ID, // Server requires 'ui_id' for SI handshake validation
+            ui_id: uiId, // Server requires 'ui_id' for SI handshake validation
         },
     };
 
     try {
         wsInstance.send(JSON.stringify(siPayload));
 
-        console.log(`[WS Robot] 📤 SI (Session Identify) sent: ui_id=${WS_UI_ID}`);
+        console.log(`[WS Robot] 📤 SI (Session Identify) sent: ui_id=${uiId}`);
     } catch (err) {
 
         console.error('[WS Robot] Failed to send SI:', err);
@@ -251,11 +252,13 @@ async function connectWs() {
         return;
     }
 
+    const settings = getSettings();
+
     // Clean up any existing connection first
     cleanupOldConnection();
 
     try {
-        wsInstance = new WS(WS_ROBOT_URL, {
+        wsInstance = new WS(settings.wsUrl, {
             rejectUnauthorized: false,
             family: 4,
         });
@@ -263,7 +266,7 @@ async function connectWs() {
         wsInstance.on('open', () => {
             isConnecting = false;
 
-            console.log(`[WS Robot] ✅ Connected to ${WS_ROBOT_URL}`);
+            console.log(`[WS Robot] ✅ Connected to ${settings.wsUrl}`);
             if (reconnectTimer) {
                 clearTimeout(reconnectTimer);
                 reconnectTimer = null;
@@ -301,7 +304,7 @@ async function connectWs() {
                     isSessionActive = true;
                     duplicateRetryCount = 0; // reset on success
 
-                    console.log(`[WS Robot] ✅ Session established as ${WS_UI_ID}! (${msg.data?.message ?? 'OK'})`);
+                    console.log(`[WS Robot] ✅ Session established as ${settings.uiId}! (${msg.data?.message ?? 'OK'})`);
                 }
                 // DUPLICATE_UI_ID = old session still lingering on server after restart
                 // Use progressive delay: 3s → 5s → 10s to wait for old session to expire
@@ -311,7 +314,7 @@ async function connectWs() {
                     const delays = [3000, 5000, 10000];
                     const delay = delays[Math.min(duplicateRetryCount - 1, delays.length - 1)];
 
-                    console.log(`[WS Robot] ⚠️ Duplicate UI ID (${WS_UI_ID}), old session still active. Retry #${duplicateRetryCount} in ${delay / 1000}s...`);
+                    console.log(`[WS Robot] ⚠️ Duplicate UI ID (${settings.uiId}), old session still active. Retry #${duplicateRetryCount} in ${delay / 1000}s...`);
                     // Close current connection and retry after delay
                     cleanupOldConnection();
                     setTimeout(() => void connectWs(), delay);
@@ -360,7 +363,7 @@ async function connectWs() {
                     }
                 }
                 // Handle Voice Control status update
-                else if (msg.type === 'status' && (msg.data?.apps_id === WS_UI_ID || msg.data?.ui_id === WS_UI_ID)) {
+                else if (msg.type === 'status' && (msg.data?.apps_id === settings.uiId || msg.data?.ui_id === settings.uiId)) {
                     if (typeof msg.data.listening === 'boolean') {
                         isListening = msg.data.listening;
 
@@ -584,7 +587,7 @@ export function isWsConnected(): boolean {
  * This should be used as ui_id in commands to match the session.
  */
 export function getWsUiId(): string {
-    return WS_UI_ID;
+    return getSettings().uiId;
 }
 
 /**
@@ -594,8 +597,18 @@ export function getListeningStatus(): boolean {
     return isListening;
 }
 
-// Eagerly start the WebSocket connection when this module is first imported
-void connectWs();
+/**
+ * Explicitly trigger a WebSocket connection (e.g., after login or settings change)
+ */
+export async function manualConnectWs(): Promise<void> {
+    if (wsInstance && wsInstance.readyState === 1) {
+        cleanupOldConnection();
+    }
+    await connectWs();
+}
+
+// REMOVED eager initialization
+// void connectWs();
 
 // Graceful shutdown to prevent zombie connections on Next.js hot reload
 if (typeof process !== 'undefined') {

@@ -102,7 +102,6 @@ export type TeleopCommandPayload = {
     code: 'TELEOP';
     data: {
         robot_id: string;
-        apps_id?: string;
         ui_id?: string;
         linear: { x: number; y: number; z: number };
         angular: { x: number; y: number; z: number };
@@ -114,7 +113,6 @@ export type MappingCommandPayload = {
     code: 'MAPPING_START' | 'MAPPING_SAVE' | 'MAPPING_STOP' | 'MAPPING_FLAG';
     data: {
         robot_id: string;
-        apps_id?: string;
         ui_id?: string;
         status: boolean;
         is_auto: boolean;
@@ -130,7 +128,6 @@ export type TeleopDoneCommandPayload = {
     code: 'TELEOP_DONE';
     data: {
         robot_id: string;
-        apps_id?: string;
         ui_id?: string;
         status: string;
     };
@@ -140,7 +137,6 @@ export type MappingDoneEventPayload = {
     code: 'MAPPING_DONE';
     data: {
         robot_id: string;
-        apps_id?: string;
         ui_id?: string;
         coverage: number;
         frontier_ratio: number;
@@ -153,7 +149,6 @@ export type TalkCommandPayload = {
     code: 'CONTROL';
     data: {
         type: 'control';
-        apps_id?: string;
         ui_id?: string;      // Sender: TFWB1 (Web Dashboard)
         action: 'TALK_ON' | 'TALK_OFF';
         robot_id: string;   // Target: SERVERAI001 (AI Server) or TABLET001

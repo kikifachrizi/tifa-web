@@ -217,11 +217,7 @@ export async function POST(request: Request) {
     }
 
     // === MAP SELECTED: notify robot of active map change ===
-    // PM Requirement (2026-05-05): Only send MAP_SELECTED via WebSocket.
-    // Do NOT send MAP_DATA — the WS broker broadcasts to all paired devices
-    // (including TFUI1/app), causing MAP_DATA_ERROR on the tablet app
-    // because the ZIP metadata doesn't contain valid YAML map files.
-    // The web dashboard should ONLY use robot_id (e.g. TFRB1), never TFUI1.
+    // PM Requirement (2026-05-07): Send MAP_SELECTED followed immediately by MAP_DATA
     if (action === 'map-selected') {
         try {
             const body = await request.json();
@@ -241,7 +237,7 @@ export async function POST(request: Request) {
                 console.warn(`[map-selected] ⚠️ robot_id was '${robotId}' (app device). This should be the RB device code.`);
             }
 
-            const { sendMapSelectedCommand, logMapSelectedToCommandLog } = await import('@/lib/api/robotControl');
+            const { sendMapSelectedCommand, logMapSelectedToCommandLog, sendMapDataCommand, logMapDataToCommandLog } = await import('@/lib/api/robotControl');
             const result = await sendMapSelectedCommand(payload);
 
             try {
@@ -250,7 +246,41 @@ export async function POST(request: Request) {
                 console.error('Failed to log MAP_SELECTED payload:', logErr);
             }
 
-            console.log(`[map-selected] ✅ MAP_SELECTED sent for map_id=${payload.data.map_id} to robot_id=${robotId} (no MAP_DATA sent to avoid app error)`);
+            console.log(`[map-selected] ✅ MAP_SELECTED sent for map_id=${payload.data.map_id} to robot_id=${robotId}`);
+
+            // === SEND MAP_DATA IMMEDIATELY AFTER MAP_SELECTED ===
+            const { buildMapDataBase64 } = await import('@/lib/api/mapDataBuilder');
+            const base64Zip = await buildMapDataBase64(payload.data.map_id);
+
+            if (base64Zip) {
+                // We use any here for the payload type to avoid circular imports or changing the top level imports
+                const mapDataPayload: any = {
+                    code: 'MAP_DATA',
+                    data: {
+                        robot_id: robotId,
+                        map_id: payload.data.map_id,
+                        format: 'zip',
+                        encoding: 'base64',
+                        payload: base64Zip
+                    },
+                    origin: payload.origin || 'UI',
+                    origin_id: payload.origin_id || getWsUiId(),
+                    timestamp: new Date().toISOString(),
+                    message_id: crypto.randomUUID()
+                };
+
+                const mapDataResult = await sendMapDataCommand(mapDataPayload);
+                
+                try {
+                    await logMapDataToCommandLog(mapDataPayload, mapDataResult.data?.ws ?? false, mapDataResult.error ?? undefined);
+                } catch (logErr) {
+                    console.error('Failed to log MAP_DATA payload:', logErr);
+                }
+                
+                console.log(`[map-selected] ✅ MAP_DATA sent for map_id=${payload.data.map_id} to robot_id=${robotId} (${base64Zip.length} chars base64)`);
+            } else {
+                console.warn(`[map-selected] ⚠️ Skipping MAP_DATA because map files could not be read or zipped for map_id=${payload.data.map_id}`);
+            }
 
             return NextResponse.json(result);
         } catch (err: unknown) {

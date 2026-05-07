@@ -161,22 +161,6 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
             if (result.error) {
                 setToast({ type: "error", message: result.error });
             } else {
-                // After saving, send MAPPING_STOP to formally end mapping session on robot
-                try {
-                    await sendMappingCommand({
-                        code: 'MAPPING_STOP',
-                        data: {
-                            robot_id: robotId,
-                            ui_id: 'TFWB1',
-                            status: false,
-                            is_auto: false,
-                        }
-                    });
-                } catch {
-                    // Non-critical: save succeeded, stop signal is best-effort
-                    console.warn('MAPPING_STOP after save failed (non-critical)');
-                }
-
                 setToast({ type: "success", message: `Map "${mapName}" saved! Live mapping complete.` });
                 setIsMapping(false);
                 setIsMappingDone(true);
@@ -292,8 +276,8 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
 
     const handleDone = async () => {
         try {
-            // If live mapping is still active, send MAPPING_STOP to the robot first
-            if (isMapping) {
+            // If live mapping was started (either currently active or just finished saving), send MAPPING_STOP
+            if (isMapping || isMappingDone) {
                 await sendMappingCommand({
                     code: 'MAPPING_STOP',
                     data: {
@@ -304,6 +288,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                     }
                 });
                 setIsMapping(false);
+                setIsMappingDone(false);
             }
             await sendTeleopDoneCommand({ robot_id: robotId, origin_id: originId });
         } catch {

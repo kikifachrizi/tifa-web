@@ -181,11 +181,12 @@ export async function POST(request: Request) {
                     // 1. Insert into m_map
                     const mapName = payload.data.map_name || `Map_${new Date().getTime()}`;
                     const category = payload.data.category || '';
+                    const categoryType = payload.data.category_type || '';
 
                     const mapResult = await query<{ map_id: number }>(
-                        `INSERT INTO m_map (map_name, description, created_at, updated_at, is_active) 
-                         VALUES ($1, $2, NOW(), NOW(), 1) RETURNING map_id`,
-                        [mapName, category]
+                        `INSERT INTO m_map (map_name, description, map_floor, created_at, updated_at, is_active) 
+                         VALUES ($1, $2, $3, NOW(), NOW(), 1) RETURNING map_id`,
+                        [mapName, category, categoryType]
                     );
 
                     if (mapResult.length > 0) {

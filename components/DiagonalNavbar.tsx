@@ -106,14 +106,14 @@ export default function DiagonalNavbar({ theme = 'diagonal' }: DiagonalNavbarPro
                                 priority
                             />
                         ) : (
-                            <>
-                                <div className={`h-10 w-10 rounded-xl bg-gradient-to-br ${currentColors.gradient} flex items-center justify-center text-white text-sm font-bold shadow-lg group-hover:scale-105 transition-transform`}>
-                                    F
-                                </div>
-                                <span className={`text-xl font-bold tracking-tight ${isScrolled && !isTifa ? 'text-[#2C3A50]' : 'text-white'}`}>
-                                    Diagonal
-                                </span>
-                            </>
+                            <Image
+                                src="/logo/logo diagonal_White.png"
+                                alt="Diagonal Robotics"
+                                width={180}
+                                height={50}
+                                className={`h-10 w-auto object-contain group-hover:scale-105 transition-transform ${isScrolled && !isTifa ? 'brightness-0' : ''}`}
+                                priority
+                            />
                         )}
                     </Link>
 

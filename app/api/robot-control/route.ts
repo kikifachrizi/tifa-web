@@ -259,7 +259,7 @@ export async function POST(request: Request) {
                     code: 'MAP_DATA',
                     data: {
                         robot_id: robotId,
-                        ui_id: 'TFWB1',
+                        ui_id: getWsUiId(),
                         map_id: payload.data.map_id,
                         format: 'zip',
                         encoding: 'base64',

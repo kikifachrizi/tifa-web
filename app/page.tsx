@@ -78,7 +78,7 @@ function DiagonalContent() {
       <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-white/95 backdrop-blur-md shadow-lg py-2" : "bg-transparent py-4"} ${isNavbarVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0 pointer-events-none"}`}>
         <div className="max-w-7xl mx-auto px-6 lg:px-12 flex items-center justify-between">
           <Link href="/" onClick={scrollToTop} className="flex items-center group">
-            <Image src="/logo/logo diagonal_White.png" alt="Diagonal Robotic Solution" width={320} height={80} className={`h-20 w-auto object-contain transition-all ${isScrolled ? 'brightness-0' : ''}`} priority />
+            <Image src="/logo/logo diagonal_White.png" alt="Diagonal Robotic Solution" width={250} height={250} className={`h-10 lg:h-12 w-auto object-contain transition-all ${isScrolled ? 'brightness-0' : ''}`} priority />
           </Link>
 
           <div className="hidden lg:flex items-center gap-1">
@@ -413,7 +413,7 @@ function DiagonalContent() {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div className="md:col-span-2">
               <div className="flex items-center gap-3 mb-6">
-                <Image src="/logo/logo diagonal_White.png" alt="Diagonal Robotic Solution" width={280} height={80} className="h-20 w-auto object-contain" />
+                <Image src="/logo/logo diagonal_White.png" alt="Diagonal Robotic Solution" width={280} height={80} className="h-12 lg:h-14 w-auto object-contain" />
               </div>
               <p className="text-gray-400 max-w-sm leading-relaxed">{dict.footer.description}</p>
             </div>

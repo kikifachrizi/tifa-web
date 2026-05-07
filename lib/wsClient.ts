@@ -101,7 +101,7 @@ export type TeleopCommandPayload = {
     data: {
         robot_id: string;
         apps_id?: string;
-        web_id?: string;
+        ui_id?: string;
         linear: { x: number; y: number; z: number };
         angular: { x: number; y: number; z: number };
         speed: string;
@@ -113,7 +113,7 @@ export type MappingCommandPayload = {
     data: {
         robot_id: string;
         apps_id?: string;
-        web_id?: string;
+        ui_id?: string;
         status: boolean;
         is_auto: boolean;
         timestamp?: string; // used by MAPPING_START
@@ -129,7 +129,7 @@ export type TeleopDoneCommandPayload = {
     data: {
         robot_id: string;
         apps_id?: string;
-        web_id?: string;
+        ui_id?: string;
         status: string;
     };
 };
@@ -139,7 +139,7 @@ export type MappingDoneEventPayload = {
     data: {
         robot_id: string;
         apps_id?: string;
-        web_id?: string;
+        ui_id?: string;
         coverage: number;
         frontier_ratio: number;
         method: string;
@@ -152,7 +152,7 @@ export type TalkCommandPayload = {
     data: {
         type: 'control';
         apps_id?: string;
-        web_id?: string;      // Sender: TFWB1 (Web Dashboard)
+        ui_id?: string;      // Sender: TFWB1 (Web Dashboard)
         action: 'TALK_ON' | 'TALK_OFF';
         robot_id: string;   // Target: SERVERAI001 (AI Server) or TABLET001
     };
@@ -187,14 +187,14 @@ async function loadWebSocketModule() {
         const wsModule = await import('ws');
         WebSocketClass = wsModule.default || wsModule;
         wsModuleLoaded = true;
-         
+
         console.log('[WS Robot] WebSocket module loaded successfully');
         return WebSocketClass;
     } catch {
         wsModuleLoaded = true; // prevent retry
-         
+
         console.warn('[WS Robot] ws package not installed. Run: npm install ws @types/ws');
-         
+
         console.warn('[WS Robot] Commands will be queued in database only (no real-time delivery to robot)');
         return null;
     }
@@ -217,10 +217,10 @@ function sendSessionIdentify() {
 
     try {
         wsInstance.send(JSON.stringify(siPayload));
-         
+
         console.log(`[WS Robot] 📤 SI (Session Identify) sent: ui_id=${WS_UI_ID}`);
     } catch (err) {
-         
+
         console.error('[WS Robot] Failed to send SI:', err);
     }
 }
@@ -265,7 +265,7 @@ async function connectWs() {
 
         wsInstance.on('open', () => {
             isConnecting = false;
-             
+
             console.log(`[WS Robot] ✅ Connected to ${WS_ROBOT_URL}`);
             if (reconnectTimer) {
                 clearTimeout(reconnectTimer);
@@ -280,20 +280,20 @@ async function connectWs() {
         wsInstance.on('close', (code: number, reason: Buffer) => {
             isConnecting = false;
             isSessionActive = false;
-             
+
             console.log(`[WS Robot] Connection closed (code=${code}, reason=${reason?.toString() || 'none'}), scheduling reconnect...`);
             scheduleReconnect();
         });
 
         wsInstance.on('error', (err: Error) => {
             isConnecting = false;
-             
+
             console.error('[WS Robot] Connection error:', err.message || err);
         });
 
         wsInstance.on('message', async (data: Buffer) => {
             const msgStr = data.toString();
-             
+
             console.log('[WS Robot] Message received:', msgStr);
 
             try {
@@ -303,7 +303,7 @@ async function connectWs() {
                 if (msg.code === 'ACK_SOFT') {
                     isSessionActive = true;
                     duplicateRetryCount = 0; // reset on success
-                     
+
                     console.log(`[WS Robot] ✅ Session established as ${WS_UI_ID}! (${msg.data?.message ?? 'OK'})`);
                 }
                 // DUPLICATE_UI_ID = old session still lingering on server after restart
@@ -313,7 +313,7 @@ async function connectWs() {
                     duplicateRetryCount++;
                     const delays = [3000, 5000, 10000];
                     const delay = delays[Math.min(duplicateRetryCount - 1, delays.length - 1)];
-                     
+
                     console.log(`[WS Robot] ⚠️ Duplicate UI ID (${WS_UI_ID}), old session still active. Retry #${duplicateRetryCount} in ${delay / 1000}s...`);
                     // Close current connection and retry after delay
                     cleanupOldConnection();
@@ -322,14 +322,14 @@ async function connectWs() {
                 // Session expired mid-use
                 else if (msg.code === 'ERROR' && msg.data?.message?.includes('Send SI first')) {
                     isSessionActive = false;
-                     
+
                     console.log('[WS Robot] ⚠️ Session expired, re-sending SI...');
                     sendSessionIdentify();
                 }
                 // Handle MAPPING_DONE event dari Robot
                 else if (msg.code === 'MAPPING_DONE') {
                     const eventData = msg.data;
-                     
+
                     console.log(`[WS Robot] 🗺️ Mapping Selesai oleh ${eventData.robot_id}! Coverage: ${(eventData.coverage * 100).toFixed(1)}%, Metode: ${eventData.method}`);
 
                     try {
@@ -358,21 +358,21 @@ async function connectWs() {
                             [deviceId, 'MAPPING_DONE', JSON.stringify(msg)]
                         );
                     } catch (err) {
-                         
+
                         console.error('[WS Robot] Failed to log MAPPING_DONE to database:', err);
                     }
                 }
                 // Handle Voice Control status update
-                else if (msg.type === 'status' && (msg.data?.apps_id === WS_UI_ID || msg.data?.web_id === WS_UI_ID)) {
+                else if (msg.type === 'status' && (msg.data?.apps_id === WS_UI_ID || msg.data?.ui_id === WS_UI_ID)) {
                     if (typeof msg.data.listening === 'boolean') {
                         isListening = msg.data.listening;
-                         
+
                         console.log(`[WS Robot] 🎙️ Voice Control Listening: ${isListening}`);
                     }
                 }
                 // Handle Generic ERROR from Robot
                 else if (msg.code === 'ERROR') {
-                     
+
                     console.error('[WS Robot] ❌ Robot Error:', msg);
                     try {
                         let deviceId = null;
@@ -391,14 +391,14 @@ async function connectWs() {
                             );
                         }
                     } catch (err) {
-                         
+
                         console.error('[WS Robot] Failed to log ERROR to database:', err);
                     }
                 }
                 // Handle ACK, INIT, and DISCONNECT dari Robot
                 else if (msg.code === 'ACK' || msg.code === 'INIT' || msg.code === 'DISCONNECT' || (!msg.code && msg.origin_id && msg.message_id)) {
                     const actualCode = msg.code || 'DISCONNECT';
-                     
+
                     console.log(`[WS Robot] 🔄 Status Update: ${actualCode}`, msg.data?.status || '');
                     try {
                         let deviceId = null;
@@ -418,7 +418,7 @@ async function connectWs() {
                             );
                         }
                     } catch (err) {
-                         
+
                         console.error(`[WS Robot] Failed to log ${actualCode} to database:`, err);
                     }
                 }
@@ -428,7 +428,7 @@ async function connectWs() {
         });
     } catch (err) {
         isConnecting = false;
-         
+
         console.error('[WS Robot] Failed to create connection:', err);
         scheduleReconnect();
     }
@@ -485,7 +485,7 @@ export async function sendRobotCommand(cmd: RobotCommandPayload | MappingCommand
     const ws = await waitForConnection(8000);
 
     if (!ws) {
-         
+
         console.warn('[WS Robot] Not connected/session not ready after waiting — command will be queued in DB only');
         return { sent: false, error: 'WebSocket not connected or session not established' };
     }
@@ -493,12 +493,12 @@ export async function sendRobotCommand(cmd: RobotCommandPayload | MappingCommand
     try {
         const message = JSON.stringify(cmd);
         ws.send(message);
-         
+
         console.log('[WS Robot] ✅ Command sent:', cmd.code, '| dest/goal:', cmd.code === 'OP' ? (cmd as RobotNavCommandPayload).data?.tray_tasks?.[0]?.goal_id : cmd.data && 'type' in cmd.data ? cmd.data.type : 'mapping');
         return { sent: true };
     } catch (err) {
         const error = err as Error;
-         
+
         console.error('[WS Robot] Failed to send command:', error.message);
         return { sent: false, error: error.message };
     }
@@ -552,7 +552,7 @@ export async function sendTalkCommand(cmd: TalkCommandPayload): Promise<{ sent: 
 
     if (!ws) {
         // [MOCK LOCAL MODE] Allow UI testing even if the websocket broker is offline
-         
+
         console.log('[WS Robot] ⚠️ WS Offline: Simulating Talk Command for local testing:', cmd.data.action);
         if (cmd.data.action === 'TALK_ON') isListening = true;
         if (cmd.data.action === 'TALK_OFF') isListening = false;
@@ -584,7 +584,7 @@ export function isWsConnected(): boolean {
 
 /**
  * Get the current WebSocket UI ID used for the active session.
- * This should be used as web_id in commands to match the session.
+ * This should be used as ui_id in commands to match the session.
  */
 export function getWsUiId(): string {
     return WS_UI_ID;

@@ -166,7 +166,7 @@ export default function DashboardLayout({
             {!sidebarCollapsed ? (
               <div className="flex items-center justify-center w-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo/logo white copy.png" alt="Diagonal Robotic Solution" className="h-14 lg:h-16 w-auto object-contain" />
+                <img src="/logo/logo diagonal_White.png" alt="Diagonal Robotic Solution" className="h-14 lg:h-16 w-auto object-contain" />
               </div>
             ) : (
               <div className="flex items-center justify-center w-full">

@@ -50,7 +50,7 @@ export default function LoginPage() {
         <div className="relative z-10 max-w-lg mb-6 animate-slide-up">
           {/* Logo */}
           <div className="flex items-center mb-4 -ml-4 lg:-ml-6">
-            <Image src="/logo/logo white copy.png" alt="Diagonal Robotic Solution" width={380} height={110} className="h-24 lg:h-28 w-auto object-contain" priority />
+            <Image src="/logo/logo diagonal_White.png" alt="Diagonal Robotic Solution" width={380} height={110} className="h-24 lg:h-28 w-auto object-contain" priority />
           </div>
 
           <h1 className="text-4xl font-bold text-white tracking-tight mb-4">

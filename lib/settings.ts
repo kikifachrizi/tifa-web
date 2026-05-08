@@ -6,6 +6,8 @@ export interface CommunicationSettings {
     uiId: string;
     robotId: string;
     mapId: string;
+    activeUserEmail?: string | null;
+    isWsTurnedOn?: boolean;
 }
 
 const SETTINGS_FILE_PATH = path.join(process.cwd(), 'data', 'settings.json');
@@ -25,7 +27,9 @@ export function getSettings(): CommunicationSettings {
         wsUrl: process.env.WS_ROBOT_URL ?? 'wss://tifa-ws.forgixrobotic.com',
         uiId: 'TFWB1',
         robotId: 'TFRB1',
-        mapId: '50'
+        mapId: '50',
+        activeUserEmail: null,
+        isWsTurnedOn: false
     };
 }
 

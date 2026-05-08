@@ -283,7 +283,31 @@ export async function deleteDestination(goalId: number): Promise<ApiResult<{ del
 
 export async function getAllMaps(): Promise<ApiResult<Map[]>> {
     const res = await fetch(`${BASE_URL}/maps`);
-    return res.json();
+    const json = await res.json() as ApiResult<Map[]>;
+    
+    // Deduplicate maps with same name (ignoring spaces vs underscores)
+    if (json.data && Array.isArray(json.data)) {
+        const uniqueMap = new globalThis.Map<string, Map>();
+        for (const m of json.data) {
+            const normalizedName = m.map_name.replace(/ /g, '_').toLowerCase();
+            if (!uniqueMap.has(normalizedName)) {
+                uniqueMap.set(normalizedName, m);
+            } else {
+                const existing = uniqueMap.get(normalizedName)!;
+                // Prefer maps with a valid floor (not '-') or newer maps
+                if (existing.map_floor === '-' && m.map_floor !== '-') {
+                    uniqueMap.set(normalizedName, m);
+                } else if (existing.map_floor === m.map_floor && m.map_id > existing.map_id) {
+                    uniqueMap.set(normalizedName, m);
+                }
+            }
+        }
+        json.data = Array.from(uniqueMap.values());
+        // Sort alphabetically
+        json.data.sort((a, b) => a.map_name.localeCompare(b.map_name));
+    }
+    
+    return json;
 }
 
 export async function getMapById(mapId: number): Promise<ApiResult<Map>> {

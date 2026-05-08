@@ -93,7 +93,7 @@ export default function SettingsPage() {
     return (
         <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
             {toast && (
-                <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2 shadow-lg animate-in slide-in-from-top-2 ${toast.type === "success"
+                <div className={`fixed top-20 right-6 z-[110] px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2 shadow-lg animate-in slide-in-from-top-2 ${toast.type === "success"
                     ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
                     : "bg-rose-100 text-rose-700 border border-rose-300"
                     }`}>

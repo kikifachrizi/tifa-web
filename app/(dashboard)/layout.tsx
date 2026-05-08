@@ -177,7 +177,7 @@ export default function DashboardLayout({
             {!sidebarCollapsed ? (
               <div className="flex items-center justify-center w-full">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/logo/logo diagonal_White.png" alt="Diagonal Robotic Solution" className="h-14 lg:h-16 w-auto object-contain" />
+                <img src="/logo/logo diagonal_White.png" alt="Diagonal Robotic Solution" className="h-10 lg:h-12 w-auto object-contain" />
               </div>
             ) : (
               <div className="flex items-center justify-center w-full">
@@ -232,7 +232,7 @@ export default function DashboardLayout({
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 min-h-0 relative z-0">
         {/* Header - Semi transparent glass - optimized */}
-        <header className="h-16 border-b border-border-base bg-card-bg/80 backdrop-blur-sm flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-20 transition-colors duration-300 gpu-accelerated">
+        <header className="h-16 border-b border-border-base bg-card-bg/80 backdrop-blur-sm flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-[100] transition-colors duration-300 gpu-accelerated">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

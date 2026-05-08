@@ -13,7 +13,7 @@ const WS_CODE_LABELS: Record<string, string> = {
     MAPPING_DONE: 'Mapping Complete',
 };
 
-export default function NotificationBell() {
+export default function NotificationBell({ selectedDeviceId }: { selectedDeviceId?: number }) {
     const { dict } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<SystemNotification[]>([]);
@@ -49,7 +49,7 @@ export default function NotificationBell() {
         // Get low battery devices
         const { data: lowBattery } = await getLowBatteryDevices();
 
-        const allowedDeviceIds = [2, 13];
+        const allowedDeviceIds = selectedDeviceId ? [selectedDeviceId] : [2, 13];
 
         // Generate notifications from low battery devices (filtered)
         const batteryNotifs: SystemNotification[] = (lowBattery ?? [])
@@ -112,7 +112,7 @@ export default function NotificationBell() {
 
         return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [selectedDeviceId]);
 
     // Close popup when clicking outside
     useEffect(() => {

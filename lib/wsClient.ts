@@ -438,7 +438,12 @@ function scheduleReconnect() {
     if (reconnectTimer) return;
     reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
-        void connectWs();
+        const settings = getSettings();
+        if (settings.isWsTurnedOn) {
+            void connectWs();
+        } else {
+            console.log('[WS Robot] Reconnect skipped, WS is manually turned OFF.');
+        }
     }, 5000);
 }
 
@@ -447,6 +452,12 @@ function scheduleReconnect() {
  * Returns ws instance if ready, null if timed out.
  */
 function waitForConnection(timeoutMs = 8000): Promise<WSClass | null> {
+    const settings = getSettings();
+    if (!settings.isWsTurnedOn) {
+        console.warn('[WS Robot] WebSocket is manually turned OFF. Cannot connect.');
+        return Promise.resolve(null);
+    }
+
     // Fast path: already connected and session active
     if (wsInstance && wsInstance.readyState === 1 && isSessionActive) {
         return Promise.resolve(wsInstance);
@@ -601,10 +612,25 @@ export function getListeningStatus(): boolean {
  * Explicitly trigger a WebSocket connection (e.g., after login or settings change)
  */
 export async function manualConnectWs(): Promise<void> {
+    const settings = getSettings();
+    if (!settings.isWsTurnedOn) {
+        console.log('[WS Robot] 🛑 manualConnectWs skipped because WS is turned OFF.');
+        cleanupOldConnection();
+        return;
+    }
+
     if (wsInstance && wsInstance.readyState === 1) {
         cleanupOldConnection();
     }
     await connectWs();
+}
+
+/**
+ * Manually disconnect the WebSocket (Session Turn Off)
+ */
+export function disconnectWs(): void {
+    console.log('[WS Robot] 🛑 WebSocket manually disconnected by user.');
+    cleanupOldConnection();
 }
 
 // REMOVED eager initialization

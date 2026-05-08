@@ -16,6 +16,23 @@ export async function POST(request: Request) {
     }
 
     if (action === 'signout') {
+        // Release WS lock if the logging out user is the owner
+        const userResponse = await getCurrentUser();
+        const user = userResponse.data;
+        
+        if (user && user.email) {
+            const { getSettings, saveSettings } = await import('@/lib/settings');
+            const settings = getSettings();
+            if (settings.activeUserEmail === user.email) {
+                saveSettings({
+                    isWsTurnedOn: false,
+                    activeUserEmail: null
+                });
+                const { disconnectWs } = await import('@/lib/wsClient');
+                disconnectWs();
+            }
+        }
+
         const result = await signOut();
         return NextResponse.json(result);
     }

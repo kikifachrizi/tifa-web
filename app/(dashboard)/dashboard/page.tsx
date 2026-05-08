@@ -242,7 +242,7 @@ export default function DashboardHomePage() {
           />
 
           {/* Notification Bell */}
-          <NotificationBell />
+          <NotificationBell selectedDeviceId={selectedGroup?.primaryDeviceId} />
         </div>
       </div>
 

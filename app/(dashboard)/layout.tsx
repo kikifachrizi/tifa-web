@@ -11,6 +11,7 @@ import ThemeSwitcher from "@/components/ThemeSwitcher";
 import UserDropdown from "@/components/UserDropdown";
 import LogoutConfirmDialog from "@/components/LogoutConfirmDialog";
 import RobotReadyToast from "@/components/RobotReadyToast";
+import WebSocketSessionControl from "@/components/WebSocketSessionControl";
 
 type UserInfo = {
   id: string;
@@ -65,14 +66,6 @@ export default function DashboardLayout({
         email: user.email ?? "",
         role: user.role || "operator",
       });
-
-      // User logged in, trigger WebSocket connection on backend
-      try {
-        await fetch('/api/ws/connect', { method: 'POST' });
-        console.log("Triggered WS connection after successful login");
-      } catch (err) {
-        console.error("Failed to trigger WS connection", err);
-      }
     };
 
     void loadUser();
@@ -261,6 +254,7 @@ export default function DashboardLayout({
           <div className="flex items-center gap-3">
             {/* Theme & Language Switchers */}
             <div className="flex items-center gap-2">
+              {userInfo && <WebSocketSessionControl currentUserEmail={userInfo.email} />}
               <ThemeSwitcher />
               <LanguageSwitcher />
             </div>

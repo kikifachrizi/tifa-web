@@ -9,7 +9,7 @@ import type { GroupedRobotWithStatus } from "@/lib/api";
 // TYPES
 // ============================================
 
-type Direction = "forward" | "backward" | "left" | "right" | null;
+type Direction = "forward" | "backward" | "left" | "right" | "forward_left" | "forward_right" | "backward_left" | "backward_right" | null;
 
 type Props = {
     selectedGroup: GroupedRobotWithStatus;
@@ -45,6 +45,22 @@ function getVelocity(direction: Direction, speedLevel: SpeedLevel) {
             angular.z = cfg.angular;
             break;
         case "right":
+            angular.z = -cfg.angular;
+            break;
+        case "forward_left":
+            linear.x = cfg.linear;
+            angular.z = cfg.angular;
+            break;
+        case "forward_right":
+            linear.x = cfg.linear;
+            angular.z = -cfg.angular;
+            break;
+        case "backward_left":
+            linear.x = -cfg.linear;
+            angular.z = cfg.angular;
+            break;
+        case "backward_right":
+            linear.x = -cfg.linear;
             angular.z = -cfg.angular;
             break;
     }
@@ -301,7 +317,12 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
     // Start pressing: send immediately + start interval
     const handlePress = useCallback(
         (direction: Direction) => {
-            if (isPressingRef.current) return;
+            // Stop any existing interval (e.g. when switching directions directly in toggle mode)
+            if (intervalRef.current) {
+                clearInterval(intervalRef.current);
+                intervalRef.current = null;
+            }
+            
             isPressingRef.current = true;
             setActiveDirection(direction);
 
@@ -354,6 +375,14 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
             ArrowRight: "right",
             d: "right",
             D: "right",
+            q: "forward_left",
+            Q: "forward_left",
+            e: "forward_right",
+            E: "forward_right",
+            z: "backward_left",
+            Z: "backward_left",
+            c: "backward_right",
+            C: "backward_right",
         };
 
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -402,18 +431,23 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                 onMouseDown={() => handlePress(direction)}
                 onMouseUp={handleRelease}
                 onMouseLeave={() => {
-                    if (activeDirection === direction) handleRelease();
+                    if (isActive) handleRelease();
                 }}
                 onTouchStart={(e) => {
-                    e.preventDefault();
+                    e.preventDefault(); // prevent scroll & double-tap zoom
                     handlePress(direction);
                 }}
                 onTouchEnd={(e) => {
                     e.preventDefault();
                     handleRelease();
                 }}
+                onTouchCancel={(e) => {
+                    e.preventDefault();
+                    handleRelease();
+                }}
+                onContextMenu={(e) => e.preventDefault()}
                 className={`
-                    relative flex flex-col items-center justify-center gap-1 rounded-xl border transition-all duration-150 select-none
+                    relative flex flex-col items-center justify-center gap-1 rounded-xl border transition-all duration-150 select-none touch-none
                     ${isActive
                         ? "bg-txt-main text-page border border-accent shadow-md scale-95"
                         : "bg-sidebar border-border-base text-txt-sec hover:border-accent hover:text-txt-main"
@@ -449,7 +483,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <p className="text-[11px] text-txt-sec">
-                            {t.release_to_stop} • WASD / Arrow keys
+                            {t.release_to_stop} • WASD / QEZC / Arrow keys
                         </p>
                         <div className="ml-auto flex items-center gap-1.5">
                             <span className={`w-1.5 h-1.5 rounded-full ${lastSendStatus === "ok" ? "bg-accent" : lastSendStatus === "error" ? "bg-rose-500" : "bg-gray-500"}`} />
@@ -462,8 +496,17 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                     {/* D-PAD */}
                     <div className="flex justify-center">
                         <div className="grid grid-cols-3 grid-rows-3 gap-2 w-[220px] h-[220px]">
-                            {/* Row 1: empty - UP - empty */}
-                            <div />
+                            {/* Row 1: UP-LEFT - UP - UP-RIGHT */}
+                            <DpadButton
+                                direction="forward_left"
+                                label={t.forward_left || "Maju Kiri"}
+                                className="w-full h-full"
+                                icon={
+                                    <svg className="w-6 h-6 -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                                    </svg>
+                                }
+                            />
                             <DpadButton
                                 direction="forward"
                                 label={t.forward}
@@ -474,7 +517,16 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                                     </svg>
                                 }
                             />
-                            <div />
+                            <DpadButton
+                                direction="forward_right"
+                                label={t.forward_right || "Maju Kanan"}
+                                className="w-full h-full"
+                                icon={
+                                    <svg className="w-6 h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 15l7-7 7 7" />
+                                    </svg>
+                                }
+                            />
 
                             {/* Row 2: LEFT - STOP - RIGHT */}
                             <DpadButton
@@ -516,8 +568,17 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                                 }
                             />
 
-                            {/* Row 3: empty - DOWN - empty */}
-                            <div />
+                            {/* Row 3: DOWN-LEFT - DOWN - DOWN-RIGHT */}
+                            <DpadButton
+                                direction="backward_left"
+                                label={t.backward_left || "Mundur Kiri"}
+                                className="w-full h-full"
+                                icon={
+                                    <svg className="w-6 h-6 rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                }
+                            />
                             <DpadButton
                                 direction="backward"
                                 label={t.backward}
@@ -528,7 +589,16 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                                     </svg>
                                 }
                             />
-                            <div />
+                            <DpadButton
+                                direction="backward_right"
+                                label={t.backward_right || "Mundur Kanan"}
+                                className="w-full h-full"
+                                icon={
+                                    <svg className="w-6 h-6 -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                }
+                            />
                         </div>
                     </div>
 

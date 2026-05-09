@@ -14,6 +14,7 @@ export async function getAllMaps(): Promise<ApiResult<Map[]>> {
             `SELECT map_id, map_name, description, map_floor, file_group_id, 
                     created_by, created_at, updated_at
              FROM m_map
+             WHERE file_group_id IS NOT NULL
              ORDER BY map_name ASC`
         );
 
@@ -65,7 +66,7 @@ export async function getMapsByFloor(floor: string): Promise<ApiResult<Map[]>> {
             `SELECT map_id, map_name, description, map_floor, file_group_id, 
                     created_by, created_at, updated_at
              FROM m_map
-             WHERE map_floor = $1
+             WHERE map_floor = $1 AND file_group_id IS NOT NULL
              ORDER BY map_name ASC`,
             [floor]
         );

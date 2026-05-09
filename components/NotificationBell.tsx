@@ -13,7 +13,7 @@ const WS_CODE_LABELS: Record<string, string> = {
     MAPPING_DONE: 'Mapping Complete',
 };
 
-export default function NotificationBell({ selectedDeviceId }: { selectedDeviceId?: number }) {
+export default function NotificationBell({ allowedDeviceIds }: { allowedDeviceIds?: number[] }) {
     const { dict } = useLanguage();
     const [isOpen, setIsOpen] = useState(false);
     const [notifications, setNotifications] = useState<SystemNotification[]>([]);
@@ -49,13 +49,13 @@ export default function NotificationBell({ selectedDeviceId }: { selectedDeviceI
         // Get low battery devices
         const { data: lowBattery } = await getLowBatteryDevices();
 
-        const allowedDeviceIds = selectedDeviceId ? [selectedDeviceId] : [2, 13];
+        const currentAllowedIds = allowedDeviceIds && allowedDeviceIds.length > 0 ? allowedDeviceIds : undefined;
 
         // Generate notifications from low battery devices (filtered)
         const batteryNotifs: SystemNotification[] = (lowBattery ?? [])
             .filter(device => {
                 const id = typeof device.device_id === 'string' ? parseInt(device.device_id, 10) : device.device_id;
-                return id && allowedDeviceIds.includes(id);
+                return id && (!currentAllowedIds || currentAllowedIds.includes(id));
             })
             .map((device) => ({
                 id: `battery-${device.device_id}-${new Date().toLocaleDateString('en-GB')}`,
@@ -73,7 +73,7 @@ export default function NotificationBell({ selectedDeviceId }: { selectedDeviceI
         const wsNotifs: SystemNotification[] = (wsTraffic ?? [])
             .filter(evt => {
                 const id = typeof evt.device_id === 'string' ? parseInt(evt.device_id, 10) : evt.device_id;
-                return ['INIT', 'READY', 'ERROR', 'DISCONNECT', 'MAPPING_DONE'].includes(evt.code) && id && allowedDeviceIds.includes(id);
+                return ['INIT', 'READY', 'ERROR', 'DISCONNECT', 'MAPPING_DONE'].includes(evt.code) && id && (!currentAllowedIds || currentAllowedIds.includes(id));
             })
             .map((evt) => {
                 const parsedId = typeof evt.device_id === 'string' ? parseInt(evt.device_id, 10) : evt.device_id;
@@ -112,7 +112,7 @@ export default function NotificationBell({ selectedDeviceId }: { selectedDeviceI
 
         return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedDeviceId]);
+    }, [allowedDeviceIds]);
 
     // Close popup when clicking outside
     useEffect(() => {

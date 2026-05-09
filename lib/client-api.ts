@@ -284,7 +284,7 @@ export async function deleteDestination(goalId: number): Promise<ApiResult<{ del
 export async function getAllMaps(): Promise<ApiResult<Map[]>> {
     const res = await fetch(`${BASE_URL}/maps`);
     const json = await res.json() as ApiResult<Map[]>;
-    
+
     // Deduplicate maps with same name (ignoring spaces vs underscores)
     if (json.data && Array.isArray(json.data)) {
         const uniqueMap = new globalThis.Map<string, Map>();
@@ -306,7 +306,7 @@ export async function getAllMaps(): Promise<ApiResult<Map[]>> {
         // Sort alphabetically
         json.data.sort((a, b) => a.map_name.localeCompare(b.map_name));
     }
-    
+
     return json;
 }
 

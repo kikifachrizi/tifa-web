@@ -242,7 +242,7 @@ export default function DashboardHomePage() {
           />
 
           {/* Notification Bell */}
-          <NotificationBell selectedDeviceId={selectedGroup?.primaryDeviceId} />
+          <NotificationBell allowedDeviceIds={selectedGroup ? selectedGroup.devices.map(d => typeof d.device_id === 'string' ? parseInt(d.device_id, 10) : d.device_id) : undefined} />
         </div>
       </div>
 

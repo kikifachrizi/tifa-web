@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getCurrentUser, signOut as apiSignOut } from "@/lib/api";
+import { clearSessionUiId } from "@/lib/sessionId";
 import { useLanguage } from "@/components/LanguageProvider";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
@@ -78,6 +79,7 @@ export default function DashboardLayout({
   const handleLogoutConfirm = async () => {
     setLoggingOut(true);
     await apiSignOut();
+    clearSessionUiId();
     router.push("/login");
   };
 

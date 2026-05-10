@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { signIn } from "@/lib/api";
+import { initSessionUiId } from "@/lib/sessionId";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -30,6 +31,9 @@ export default function LoginPage() {
       setLoading(false);
       return;
     }
+
+    // Generate unique UI Client ID for this user + tab
+    initSessionUiId(email);
 
     router.push("/dashboard");
   };

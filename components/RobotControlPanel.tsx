@@ -25,7 +25,6 @@ import { useLanguage } from "@/components/LanguageProvider";
 // TYPES
 // ============================================
 
-type ControlStep = "tray" | "table" | "confirm";
 type ControlMode = "navigation" | "teleop";
 
 
@@ -47,11 +46,8 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
     const [controlMode, setControlMode] = useState<ControlMode>("navigation");
 
     // State
-    type TaskItem = { tray: number; goal: Goal };
-    const [tasks, setTasks] = useState<TaskItem[]>([]);
-
-    const [selectedTray, setSelectedTray] = useState<number | null>(null);
-    const [step, setStep] = useState<ControlStep>("tray");
+    const [activeTray, setActiveTray] = useState<number | null>(null);
+    const [trayDestinations, setTrayDestinations] = useState<Record<number, Goal[]>>({});
     const [tables, setTables] = useState<Goal[]>([]);
     const [maps, setMaps] = useState<Map[]>([]);
     const [selectedMapId, setSelectedMapId] = useState<number | null>(null);
@@ -115,9 +111,8 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
             } else {
                 setActiveMapIdFromDb(mapId);
                 setSelectedMapId(mapId);
-                setTasks([]);
-                setSelectedTray(null);
-                setStep("tray");
+                setActiveTray(null);
+                setTrayDestinations({});
                 setToast({ type: "success", message: d.map_activated });
 
                 // PM Requirement: Send MAP_SELECTED via WebSocket to the robot
@@ -241,37 +236,36 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
 
     // Handle send
     const handleSend = async () => {
-        if (tasks.length === 0 || !selectedMapId) return;
+        const allTasks = Object.entries(trayDestinations).flatMap(([tray, goals]) =>
+            goals.map(goal => ({ tray: Number(tray), goal_id: goal.goal_id }))
+        );
+        if (allTasks.length === 0 || !selectedMapId) return;
         setIsSending(true);
 
         try {
             const payload: SendToTablePayload = {
                 device_id: deviceId,
-                tasks: tasks.map(t => ({
-                    tray: t.tray,
-                    goal_id: t.goal.goal_id
-                })),
+                tasks: allTasks,
                 map_id: selectedMapId,
                 robot_id: selectedGroup.rbDevice?.device_code ?? `RB${selectedGroup.groupId}`,
                 origin_id: selectedGroup.uiDevice?.device_code ?? `UI_TIFA_${selectedGroup.groupId}`,
-                speed: "S", // Default to slow as UI was removed
+                speed: "S",
             };
             const result = await sendRobotToTable(payload);
 
             if (result.error) {
                 setToast({ type: "error", message: result.error });
             } else {
+                const destNames = Object.values(trayDestinations).flat().map(g => g.goal_name ?? g.goal_code);
+                const trayNums = Object.keys(trayDestinations).filter(k => (trayDestinations[Number(k)]?.length ?? 0) > 0);
                 setToast({
                     type: "success",
                     message: d.success_detail
-                        .replace("{table}", tasks.map(t => t.goal.goal_name ?? t.goal.goal_code).join(', '))
-                        .replace("{tray}", tasks.map(t => t.tray).join(', ')),
+                        .replace("{table}", [...new Set(destNames)].join(', '))
+                        .replace("{tray}", trayNums.join(', ')),
                 });
-                // Reset selections
-                setTasks([]);
-                setSelectedTray(null);
-                setStep("tray");
-                // Refresh active tasks
+                setActiveTray(null);
+                setTrayDestinations({});
                 void loadActiveTasks();
             }
         } catch {
@@ -326,14 +320,6 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
         } catch {
             setToast({ type: "error", message: "Gagal menandai tugas." });
         }
-    };
-
-    // Reset when going back
-    const goToStep = (newStep: ControlStep) => {
-        if (newStep === "tray") {
-            setSelectedTray(null);
-        }
-        setStep(newStep);
     };
 
     // Tray icons
@@ -597,9 +583,8 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
                                                                         onClick={() => {
                                                                             if (isSettingMap) return;
                                                                             setSelectedMapId(map.map_id);
-                                                                            setTasks([]);
-                                                                            setSelectedTray(null);
-                                                                            setStep("tray");
+                                                                            setActiveTray(null);
+                                                                            setTrayDestinations({});
                                                                         }}
                                                                         className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-all duration-150 border-b border-border-base/50 last:border-b-0 ${isSelected
                                                                             ? 'bg-txt-accent/10'
@@ -680,310 +665,162 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
 
 
 
-                            {/* Step indicator */}
-                            <div className="flex items-center gap-2 mb-5">
-                                {[
-                                    { key: "tray" as ControlStep, label: d.step_tray, num: 1 },
-                                    { key: "table" as ControlStep, label: d.step_table, num: 2 },
-                                    { key: "confirm" as ControlStep, label: d.step_confirm, num: 3 },
-                                ].map((s, i) => {
-                                    const isActive = step === s.key;
-                                    const isDone = (s.key === "tray" && step !== "tray")
-                                        || (s.key === "table" && tasks.length > 0 && step === "confirm");
-                                    return (
-                                        <div key={s.key} className="flex items-center gap-2 flex-1">
-                                            {i > 0 && (
-                                                <div className={`flex-shrink-0 w-6 h-[1px] ${isDone || isActive ? "bg-txt-accent/50" : "bg-border-base"}`} />
-                                            )}
+                            {/* NEW UNIFIED LAYOUT — per-tray destinations */}
+                            <div className="flex flex-col md:flex-row gap-4 mb-5">
+                                {/* Left Side: Trays */}
+                                <div className="w-full md:w-1/3 flex flex-col gap-3">
+                                    {[1, 2, 3].map((tray) => {
+                                        const isActive = activeTray === tray;
+                                        const destinations = trayDestinations[tray] ?? [];
+                                        const hasDestinations = destinations.length > 0;
+                                        return (
                                             <button
-                                                onClick={() => {
-                                                    if (s.key === "tray") goToStep("tray");
-                                                    else if (s.key === "table" && selectedTray !== null) goToStep("table");
-                                                    else if (s.key === "confirm" && tasks.length > 0) goToStep("confirm");
-                                                }}
-                                                disabled={s.key === "confirm" && tasks.length === 0}
-                                                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-medium transition-all flex-shrink-0 border ${isActive
-                                                    ? "bg-txt-accent text-[#171717] border-txt-accent shadow-[0_0_12px_rgba(3,230,228,0.35)]"
-                                                    : isDone
-                                                        ? "bg-txt-accent/10 text-txt-accent border-txt-accent/30"
-                                                        : "bg-sidebar text-txt-sec border-border-base"
+                                                key={tray}
+                                                onClick={() => setActiveTray(prev => prev === tray ? null : tray)}
+                                                className={`group flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 text-left w-full shadow-sm hover:shadow-md ${isActive
+                                                    ? "bg-txt-accent border-txt-accent shadow-[0_0_20px_rgba(3,230,228,0.25)] text-[#171717] ring-2 ring-txt-accent/40"
+                                                    : hasDestinations
+                                                        ? "bg-txt-accent/10 border-txt-accent/40 text-txt-accent"
+                                                        : "bg-sidebar border-border-base hover:border-txt-accent/40 hover:bg-txt-accent/5 text-txt-main"
                                                     }`}
                                             >
-                                                <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${isActive
-                                                    ? "bg-[#171717]/20 text-[#171717]"
-                                                    : isDone
-                                                        ? "bg-txt-accent/20 text-txt-accent"
-                                                        : "bg-sidebar text-txt-sec"
+                                                <div className={`p-3 rounded-lg transition-colors ${isActive ? "bg-[#171717]/20" : hasDestinations ? "bg-txt-accent/20 text-txt-accent" : "bg-txt-main/5 text-txt-sec group-hover:text-txt-accent"
                                                     }`}>
-                                                    {isDone ? "✓" : s.num}
-                                                </span>
-                                                {s.label}
-                                            </button>
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            {/* STEP 1: Tray Selection */}
-                            {step === "tray" && (
-                                <div>
-                                    <p className="text-xs text-txt-sec mb-3">{d.select_tray_desc}</p>
-                                    <div className="grid grid-cols-3 gap-3">
-                                        {[1, 2, 3].map((tray) => {
-                                            const existingTask = tasks.find(t => t.tray === tray);
-                                            const isSelected = selectedTray === tray;
-                                            const isAssigned = !!existingTask;
-
-                                            return (
-                                                <div
-                                                    role="button"
-                                                    tabIndex={0}
-                                                    key={tray}
-                                                    onClick={() => {
-                                                        setSelectedTray(tray);
-                                                        setStep("table");
-                                                    }}
-                                                    className={`group relative flex flex-col items-center gap-2 p-4 rounded-xl border transition-all duration-200 cursor-pointer ${isSelected
-                                                        ? "bg-txt-accent border-txt-accent shadow-[0_0_20px_rgba(3,230,228,0.25)]"
-                                                        : isAssigned
-                                                            ? "bg-txt-accent/10 border-txt-accent/30 hover:border-txt-accent/60"
-                                                            : "bg-sidebar border-border-base hover:border-txt-accent/40 hover:bg-txt-accent/5"
-                                                        }`}
-                                                >
-                                                    <div className={`p-2.5 rounded-lg transition-colors ${isSelected
-                                                        ? "bg-[#171717]/20 text-[#171717]"
-                                                        : isAssigned
-                                                            ? "bg-txt-accent/20 text-txt-accent"
-                                                            : "bg-txt-main/5 text-txt-sec group-hover:text-txt-accent"
-                                                        }`}>
-                                                        {trayIcons[tray - 1]}
-                                                    </div>
-                                                    <div className="text-center">
-                                                        <p className={`text-sm font-semibold ${isSelected ? "text-[#171717]" : isAssigned ? "text-txt-accent" : "text-txt-main"}`}>
-                                                            {d.tray} {tray}
-                                                        </p>
-                                                        <p className={`text-[10px] mt-0.5 ${isSelected ? "text-[#171717]/70" : "text-txt-sec"}`}>
-                                                            {isAssigned ? existingTask.goal.goal_name ?? existingTask.goal.goal_code : tray === 1 ? d.tray_bottom : tray === 2 ? d.tray_middle : d.tray_top}
-                                                        </p>
-                                                    </div>
-                                                    {(isSelected || isAssigned) && (
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation();
-                                                                setTasks(prev => prev.filter(t => t.tray !== tray));
-                                                                if (selectedTray === tray) {
-                                                                    setSelectedTray(null);
-                                                                }
-                                                            }}
-                                                            className="absolute top-2 right-2 z-10 p-1 group/cancel outline-none"
-                                                            title="Batal Pilih Nampan"
-                                                        >
-                                                            <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all ${isSelected ? "bg-[#171717]/20 hover:bg-rose-500 hover:shadow-md hover:scale-110" : "bg-txt-accent/20 hover:bg-rose-500 hover:shadow-md hover:scale-110"}`}>
-                                                                <svg className={`w-3 h-3 transition-colors block group-hover/cancel:hidden ${isSelected ? "text-[#171717]" : "text-txt-accent"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                                                </svg>
-                                                                <svg className="w-3 h-3 transition-colors hidden group-hover/cancel:block text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M6 18L18 6M6 6l12 12" />
-                                                                </svg>
-                                                            </div>
-                                                        </button>
+                                                    {trayIcons[tray - 1]}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className={`text-base font-bold ${isActive ? "text-[#171717]" : hasDestinations ? "text-txt-accent" : "text-txt-main"}`}>
+                                                        {d.tray} {tray}
+                                                    </p>
+                                                    <p className={`text-[11px] mt-0.5 ${isActive ? "text-[#171717]/70" : "text-txt-sec"}`}>
+                                                        {isActive ? "Pilih destinasi →" : tray === 1 ? d.tray_bottom : tray === 2 ? d.tray_middle : d.tray_top}
+                                                    </p>
+                                                    {/* Show assigned destinations */}
+                                                    {hasDestinations && (
+                                                        <div className="flex flex-wrap gap-1 mt-1.5">
+                                                            {destinations.map(dest => (
+                                                                <span key={dest.goal_id} className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-semibold leading-tight ${isActive ? "bg-[#171717]/20 text-[#171717]" : "bg-txt-accent/20 text-txt-accent"}`}>
+                                                                    → {dest.goal_name ?? dest.goal_code}
+                                                                </span>
+                                                            ))}
+                                                        </div>
                                                     )}
                                                 </div>
-                                            )
-                                        })}
-                                    </div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
-                            )}
 
-                            {/* STEP 2: Table Selection */}
-                            {step === "table" && (
-                                <div>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <p className="text-xs text-txt-sec">{d.select_table_desc}</p>
-                                        <button
-                                            onClick={() => goToStep("tray")}
-                                            className="text-[11px] text-txt-accent hover:text-txt-accent/70 transition-colors font-medium"
-                                        >
-                                            ← {d.back}
-                                        </button>
-                                    </div>
-
-                                    {/* Selected tray badge */}
-                                    <div className="mb-3 flex items-center justify-between">
-                                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-txt-accent/10 border border-txt-accent/20 text-[11px] font-medium text-txt-accent transition-all">
-                                            {trayIcons[selectedTray! - 1]}
-                                            {d.tray} {selectedTray}
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setTasks(prev => prev.filter(t => t.tray !== selectedTray));
-                                                    setSelectedTray(null);
-                                                    goToStep("tray");
-                                                }}
-                                                className="ml-1 p-0.5 hover:bg-rose-500 hover:text-white rounded-full transition-colors outline-none"
-                                                title="Batal Nampan"
-                                            >
-                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                                                </svg>
-                                            </button>
-                                        </span>
-                                        {tasks.some(t => t.tray === selectedTray) && (
-                                            <button
-                                                onClick={() => setStep("confirm")}
-                                                className="px-3 py-1.5 bg-txt-accent text-[#171717] border border-txt-accent rounded-lg text-xs font-semibold hover:bg-txt-accent/90 transition-all shadow-[0_0_12px_rgba(3,230,228,0.2)] flex items-center gap-1.5"
-                                            >
-                                                Review Selection
-                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                                </svg>
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {tables.length === 0 ? (
-                                        <div className="text-center py-8">
-                                            <svg className="w-12 h-12 text-txt-sec/30 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                {/* Right Side: Destinations */}
+                                <div className="w-full md:w-2/3">
+                                    {activeTray === null ? (
+                                        <div className="h-full flex flex-col items-center justify-center py-8 rounded-xl border border-dashed border-border-base bg-sidebar/30">
+                                            <svg className="w-12 h-12 text-txt-sec/30 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+                                            </svg>
+                                            <p className="text-sm text-txt-sec font-medium">Pilih nampan terlebih dahulu</p>
+                                            <p className="text-[11px] text-txt-sec/60 mt-1">Klik nampan di sebelah kiri untuk memilih destinasi</p>
+                                        </div>
+                                    ) : tables.length === 0 ? (
+                                        <div className="h-full flex flex-col items-center justify-center py-8 rounded-xl border border-dashed border-border-base bg-sidebar/30">
+                                            <svg className="w-12 h-12 text-txt-sec/30 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                             </svg>
                                             <p className="text-sm text-txt-sec">{d.no_tables}</p>
                                         </div>
                                     ) : (
-                                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                                            {tables.map((table) => {
-                                                const isSelected = tasks.some(t => t.tray === selectedTray && t.goal.goal_id === table.goal_id);
-                                                return (
-                                                    <button
-                                                        key={table.goal_id}
-                                                        onClick={() => {
-                                                            setTasks(prev => {
-                                                                const exists = prev.some(t => t.tray === selectedTray && t.goal.goal_id === table.goal_id);
-                                                                if (exists) {
-                                                                    return prev.filter(t => !(t.tray === selectedTray && t.goal.goal_id === table.goal_id));
-                                                                } else {
-                                                                    return [...prev, { tray: selectedTray!, goal: table }];
-                                                                }
-                                                            });
-                                                        }}
-                                                        className={`group relative flex flex-col items-center gap-1.5 p-3 rounded-xl border transition-all duration-200 ${isSelected ? "border-txt-accent bg-txt-accent shadow-[0_0_15px_rgba(3,230,228,0.25)]" : "border-border-base bg-sidebar hover:border-txt-accent/40 hover:bg-txt-accent/5"}`}
-                                                    >
-                                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${isSelected ? "bg-[#171717]/20" : "bg-txt-accent/5 group-hover:bg-txt-accent/10"}`}>
-                                                            <svg className={`w-5 h-5 ${isSelected ? "text-[#171717]" : "text-txt-accent"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2" />
-                                                            </svg>
-                                                        </div>
-                                                        <span className={`text-xs font-medium w-full text-center line-clamp-2 ${isSelected ? "text-[#171717]" : "text-txt-main group-hover:text-txt-accent"}`}>
-                                                            {table.goal_name ?? table.goal_code ?? `Table ${table.goal_id}`}
-                                                        </span>
-                                                        {isSelected && (
-                                                            <div className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-card rounded-full border-2 border-txt-accent flex items-center justify-center">
-                                                                <svg className="w-3 h-3 text-txt-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        <>
+                                            <p className="text-[11px] text-txt-sec mb-2 font-medium">Destinasi untuk <span className="text-txt-accent font-bold">{d.tray} {activeTray}</span>:</p>
+                                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                                                {tables.map((table) => {
+                                                    const currentTrayDests = trayDestinations[activeTray] ?? [];
+                                                    const isSelected = currentTrayDests.some(g => g.goal_id === table.goal_id);
+                                                    // Check if this destination is taken by another tray
+                                                    const ownerTray = Object.entries(trayDestinations).find(
+                                                        ([t, goals]) => Number(t) !== activeTray && goals.some(g => g.goal_id === table.goal_id)
+                                                    );
+                                                    const isTakenByOther = !!ownerTray;
+
+                                                    return (
+                                                        <button
+                                                            key={table.goal_id}
+                                                            disabled={isTakenByOther}
+                                                            onClick={() => {
+                                                                if (isTakenByOther) return;
+                                                                setTrayDestinations(prev => {
+                                                                    const current = prev[activeTray] ?? [];
+                                                                    const exists = current.some(g => g.goal_id === table.goal_id);
+                                                                    return {
+                                                                        ...prev,
+                                                                        [activeTray]: exists
+                                                                            ? current.filter(g => g.goal_id !== table.goal_id)
+                                                                            : [...current, table],
+                                                                    };
+                                                                });
+                                                            }}
+                                                            className={`group relative flex flex-col items-center justify-center gap-2 p-4 rounded-xl border transition-all duration-200 shadow-sm ${isTakenByOther
+                                                                    ? "border-border-base bg-sidebar/50 opacity-50 cursor-not-allowed"
+                                                                    : isSelected
+                                                                        ? "border-txt-accent bg-txt-accent shadow-[0_0_15px_rgba(3,230,228,0.25)] hover:shadow-md"
+                                                                        : "border-border-base bg-sidebar hover:border-txt-accent/40 hover:bg-txt-accent/5 hover:shadow-md"
+                                                                }`}
+                                                        >
+                                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isSelected ? "bg-[#171717]/20 text-[#171717]" : "bg-txt-accent/10 text-txt-accent group-hover:bg-txt-accent/20"
+                                                                }`}>
+                                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2" />
                                                                 </svg>
                                                             </div>
-                                                        )}
-                                                    </button>
-                                                )
-                                            })}
-                                        </div>
+                                                            <span className={`text-xs font-semibold w-full text-center line-clamp-2 ${isSelected ? "text-[#171717]" : "text-txt-main group-hover:text-txt-accent"
+                                                                }`}>
+                                                                {table.goal_name ?? table.goal_code ?? `Destinasi ${table.goal_id}`}
+                                                            </span>
+                                                            {/* Show owner tray badge if taken by another tray */}
+                                                            {isTakenByOther && (
+                                                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-txt-sec/10 text-[10px] font-bold text-txt-sec">
+                                                                    {trayIcons[Number(ownerTray[0]) - 1]}
+                                                                    <span>T{ownerTray[0]}</span>
+                                                                </span>
+                                                            )}
+                                                            {/* Show current tray badge if selected */}
+                                                            {isSelected && (
+                                                                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-[#171717]/20 text-[10px] font-bold text-[#171717]">
+                                                                    {trayIcons[activeTray - 1]}
+                                                                    <span>T{activeTray}</span>
+                                                                </span>
+                                                            )}
+                                                            {isSelected && (
+                                                                <div className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-card rounded-full border-2 border-txt-accent flex items-center justify-center shadow-sm">
+                                                                    <svg className="w-3.5 h-3.5 text-txt-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                </div>
+                                                            )}
+                                                        </button>
+                                                    )
+                                                })}
+                                            </div>
+                                        </>
                                     )}
                                 </div>
-                            )}
+                            </div>
 
-                            {/* STEP 3: Confirmation */}
-                            {step === "confirm" && tasks.length > 0 && (
-                                <div>
-                                    <div className="flex items-center justify-between mb-3">
-                                        <p className="text-xs text-txt-sec">{d.confirm_desc}</p>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => goToStep("table")}
-                                                className="text-[11px] text-txt-accent hover:text-blue-700 dark:text-blue-400 transition-colors font-medium"
-                                            >
-                                                ← {d.back}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    setSelectedTray(null);
-                                                    setStep("tray");
-                                                }}
-                                                className="text-[11px] px-2 py-1 bg-txt-main/10 text-txt-main rounded hover:bg-txt-main/20 transition-colors font-medium border border-txt-main/20"
-                                            >
-                                                + Add Tray
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    {/* Confirmation cards */}
-                                    <div className="space-y-2 mb-4 max-h-[300px] overflow-y-auto pr-1">
-                                        {tasks.map((task, idx) => (
-                                            <div key={`${task.tray}-${task.goal.goal_id}-${idx}`} className="bg-sidebar rounded-xl border border-accent/20 dark:border-neutral-700 shadow-sm p-4 border-l-[3px] border-l-accent dark:border-l-neutral-500 dark:bg-neutral-800/60">
-                                                <div className="flex items-center gap-4">
-                                                    {/* Robot */}
-                                                    <div className="flex flex-col items-center gap-1.5">
-                                                        <div className="w-10 h-10 rounded-xl bg-accent/10 dark:bg-neutral-700/60 flex items-center justify-center border border-accent/20 dark:border-neutral-600">
-                                                            <svg className="w-5 h-5 text-accent dark:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-                                                            </svg>
-                                                        </div>
-                                                        <span className="text-[9px] text-txt-sec dark:text-neutral-400 font-medium">{selectedGroup.displayName}</span>
-                                                    </div>
-
-                                                    {/* Arrow */}
-                                                    <div className="flex-1 flex flex-col items-center justify-center">
-                                                        <p className="text-[10px] text-accent dark:text-neutral-300 font-semibold mb-1">{d.tray} {task.tray}</p>
-                                                        <div className="flex items-center gap-1 w-full justify-center">
-                                                            <div className="h-[1px] w-full max-w-[40px] bg-accent/30 dark:bg-neutral-600" />
-                                                            <svg className="w-4 h-4 text-accent dark:text-neutral-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                                            </svg>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Table */}
-                                                    <div className="flex flex-col items-center gap-1.5">
-                                                        <div className="w-10 h-10 rounded-xl bg-accent/10 dark:bg-neutral-700/60 flex items-center justify-center border border-accent/20 dark:border-neutral-600">
-                                                            <svg className="w-5 h-5 text-accent dark:text-neutral-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 6v12a2 2 0 002 2h12a2 2 0 002-2V6M9 6V4a2 2 0 012-2h2a2 2 0 012 2v2" />
-                                                            </svg>
-                                                        </div>
-                                                        <span className="text-[9px] text-txt-sec dark:text-neutral-400 font-medium max-w-[60px] truncate text-center">
-                                                            {task.goal.goal_name ?? task.goal.goal_code}
-                                                        </span>
-                                                    </div>
-
-                                                    {/* Delete btn */}
-                                                    <button
-                                                        onClick={() => {
-                                                            setTasks(prev => prev.filter(t => !(t.tray === task.tray && t.goal.goal_id === task.goal.goal_id)));
-                                                            if (tasks.length === 1) {
-                                                                setStep("tray");
-                                                                setSelectedTray(null);
-                                                            }
-                                                        }}
-                                                        className="p-1.5 bg-rose-500/10 text-rose-500 rounded-lg hover:bg-rose-500/20 transition-colors dark:bg-neutral-700/50 dark:text-neutral-400 dark:hover:bg-rose-500/20 dark:hover:text-rose-400"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Send button */}
+                            {/* Send button */}
+                            {(() => {
+                                const totalTasks = Object.values(trayDestinations).flat().length;
+                                const isDisabled = isSending || totalTasks === 0;
+                                return (
                                     <button
                                         onClick={handleSend}
-                                        disabled={isSending}
-                                        className={`w-full py-3.5 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center justify-center gap-2 ${isSending
-                                            ? "bg-accent/20 dark:bg-neutral-700/50 text-accent/50 dark:text-neutral-500 cursor-not-allowed border border-accent/10 dark:border-neutral-700"
-                                            : "bg-accent dark:bg-neutral-800 text-[#171717] hover:bg-accent/90 dark:hover:bg-white shadow-[0_0_20px_rgba(3,230,228,0.25)] border border-accent/50 dark:border-neutral-600 active:scale-[0.98]"
+                                        disabled={isDisabled}
+                                        className={`w-full py-4 rounded-xl font-bold text-base transition-all duration-200 flex items-center justify-center gap-2 mb-2 ${isDisabled
+                                            ? "bg-txt-accent/20 dark:bg-neutral-700/50 text-txt-accent/50 dark:text-neutral-500 cursor-not-allowed border border-txt-accent/10 dark:border-neutral-700"
+                                            : "bg-txt-accent dark:bg-neutral-800 text-[#171717] hover:bg-txt-accent/90 dark:hover:bg-white shadow-[0_0_20px_rgba(3,230,228,0.25)] border border-txt-accent/50 dark:border-neutral-600 active:scale-[0.98]"
                                             }`}
                                     >
                                         {isSending ? (
                                             <>
-                                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
                                                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                                                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                                                 </svg>
@@ -991,15 +828,15 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
                                             </>
                                         ) : (
                                             <>
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                                                 </svg>
-                                                {d.send}
+                                                {d.send} {totalTasks > 0 && `(${totalTasks})`}
                                             </>
                                         )}
                                     </button>
-                                </div>
-                            )}
+                                );
+                            })()}
 
                             {/* Active Tasks Section (today only) */}
                             {activeTasks.length > 0 && (

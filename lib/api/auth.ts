@@ -4,10 +4,12 @@
 
 import { query } from '@/lib/dbClient';
 import type { AuthUser, SignInResult, ApiResult } from '@/lib/types/database';
+import { cookies } from 'next/headers';
+import crypto from 'crypto';
 
-// Simple in-memory session store (for development only)
-// In production, use proper session management (cookies, JWT, etc.)
-let currentUser: AuthUser | null = null;
+// In-memory session store (for development only)
+// In production, use proper session management (Redis, JWT, etc.)
+const sessionStore = new Map<string, AuthUser>();
 
 /**
  * Sign in with email/username and password
@@ -60,17 +62,26 @@ export async function signIn(email: string, password: string): Promise<SignInRes
             return { success: false, error: "Invalid user role. Please contact administrator." };
         }
 
-        // Store in simple session
-        currentUser = {
+        // Create a unique session ID
+        const sessionId = crypto.randomUUID();
+
+        // Store in simple session map
+        const userObj: AuthUser = {
             id: user.user_id.toString(),
             email: user.email ?? user.username,
             role: userRole as 'admin' | 'operator',
             user_metadata: { role: userRole },
         };
+        
+        sessionStore.set(sessionId, userObj);
+        
+        // Set secure HTTP-only cookie
+        const cookieStore = await cookies();
+        cookieStore.set('tifa_session', sessionId, { path: '/', httpOnly: true });
 
         return {
             success: true,
-            user: currentUser,
+            user: userObj,
         };
     } catch (err: unknown) {
         const error = err as Error;
@@ -86,7 +97,14 @@ export async function signIn(email: string, password: string): Promise<SignInRes
  * Sign out current user
  */
 export async function signOut(): Promise<ApiResult<null>> {
-    currentUser = null;
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('tifa_session')?.value;
+    
+    if (sessionId) {
+        sessionStore.delete(sessionId);
+    }
+    cookieStore.delete('tifa_session');
+    
     return {
         data: null,
         error: null,
@@ -98,8 +116,17 @@ export async function signOut(): Promise<ApiResult<null>> {
  * Note: This uses simple in-memory session for development
  */
 export async function getCurrentUser(): Promise<ApiResult<AuthUser | null>> {
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('tifa_session')?.value;
+    
+    if (!sessionId) {
+        return { data: null, error: null };
+    }
+    
+    const user = sessionStore.get(sessionId) || null;
+    
     return {
-        data: currentUser,
+        data: user,
         error: null,
     };
 }
@@ -108,6 +135,11 @@ export async function getCurrentUser(): Promise<ApiResult<AuthUser | null>> {
  * Update user profile
  */
 export async function updateUserProfile(data: { email?: string; password?: string }): Promise<ApiResult<null>> {
+    const cookieStore = await cookies();
+    const sessionId = cookieStore.get('tifa_session')?.value;
+    if (!sessionId) return { data: null, error: "Not authenticated" };
+    
+    const currentUser = sessionStore.get(sessionId);
     if (!currentUser) {
         return { data: null, error: "Not authenticated" };
     }
@@ -145,6 +177,7 @@ export async function updateUserProfile(data: { email?: string; password?: strin
         // Update local session if email changed
         if (data.email) {
             currentUser.email = data.email;
+            sessionStore.set(sessionId, currentUser);
         }
 
         return {

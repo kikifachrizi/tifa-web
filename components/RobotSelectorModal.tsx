@@ -161,7 +161,7 @@ export default function RobotSelectorModal({
                     {/* Modal */}
                     <div
                         ref={modalRef}
-                        className="absolute top-full left-0 mt-3 w-[300px] sm:w-[360px] max-w-[90vw] max-h-[70vh] flex flex-col bg-gradient-to-br from-sidebar via-card-bg to-sidebar rounded-2xl border border-border-base shadow-2xl shadow-black/30 z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300"
+                        className="absolute top-full left-0 md:left-auto md:right-0 mt-3 w-[300px] sm:w-[360px] max-w-[90vw] max-h-[70vh] flex flex-col bg-gradient-to-br from-sidebar via-card-bg to-sidebar rounded-2xl border border-border-base shadow-2xl shadow-black/30 z-[100] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300"
                     >
                         {/* Header */}
                         <div className="px-4 py-4 bg-gradient-to-r from-blue-500/10 via-purple-500/10 to-blue-500/10 border-b border-border-base">

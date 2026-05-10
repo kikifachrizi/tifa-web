@@ -91,8 +91,7 @@ export async function POST(request: Request) {
                 );
             }
 
-            // Override ui_id with the active WS session ID to match SI handshake
-            payload.data.ui_id = getWsUiId();
+            // ui_id comes from frontend (per-session unique ID)
 
             // Send directly via WebSocket
             const result = await sendTeleopCommand(payload);
@@ -259,7 +258,7 @@ export async function POST(request: Request) {
                     code: 'MAP_DATA',
                     data: {
                         robot_id: robotId,
-                        ui_id: getWsUiId(),
+                        ui_id: payload.origin_id || getWsUiId(),
                         map_id: payload.data.map_id,
                         format: 'zip',
                         encoding: 'base64',
@@ -344,8 +343,7 @@ export async function POST(request: Request) {
                 );
             }
 
-            // Override ui_id with the active WS session ID to match SI handshake
-            payload.data.ui_id = getWsUiId();
+            // ui_id comes from frontend (per-session unique ID)
 
             const result = await sendTeleopDoneCommand(payload);
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useLanguage } from "@/components/LanguageProvider";
+import { getSessionUiId } from "@/lib/sessionId";
 
 export default function SettingsPage() {
     const { dict } = useLanguage();
@@ -12,6 +13,7 @@ export default function SettingsPage() {
 
     const [wsUrl, setWsUrl] = useState("wss://tifa-ws.forgixrobotic.com");
     const [uiId, setUiId] = useState("TFWB1");
+    const [sessionUiId, setSessionUiId] = useState("");
     const [robotId, setRobotId] = useState("TFRB1");
     const [mapId, setMapId] = useState("50");
 
@@ -33,6 +35,8 @@ export default function SettingsPage() {
             }
         };
         fetchSettings();
+        // Load session-specific UI Client ID
+        setSessionUiId(getSessionUiId());
     }, []);
 
     useEffect(() => {
@@ -158,13 +162,30 @@ export default function SettingsPage() {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-medium text-txt-sec mb-1">UI Client ID</label>
+                            <label className="block text-xs font-medium text-txt-sec mb-1">WS Session ID <span className="text-[10px] text-txt-sec/50">(server-level)</span></label>
                             <input
                                 type="text"
                                 value={uiId}
                                 onChange={(e) => setUiId(e.target.value)}
                                 className="w-full bg-sidebar border border-border-base rounded-lg px-4 py-2.5 text-sm text-txt-main focus:outline-none focus:border-blue-500 transition-colors"
                             />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-medium text-txt-sec mb-1">
+                                UI Client ID
+                                <span className="ml-2 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 text-[10px] font-bold">ACTIVE</span>
+                            </label>
+                            <div className="relative">
+                                <input
+                                    type="text"
+                                    value={sessionUiId}
+                                    readOnly
+                                    className="w-full bg-sidebar/50 border border-emerald-500/30 rounded-lg px-4 py-2.5 text-sm text-emerald-400 font-mono focus:outline-none cursor-default"
+                                />
+                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-txt-sec/50">per-session, auto-generated</span>
+                            </div>
+                            <p className="text-[10px] text-txt-sec/60 mt-1">Unique per user account + browser tab. Regenerated on every login.</p>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">

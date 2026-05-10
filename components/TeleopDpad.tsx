@@ -475,8 +475,8 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
             )}
 
             <div className="flex flex-col lg:flex-row gap-6">
-                {/* LEFT SIDE: TELEOP CONTROLS */}
-                <div className="flex-1 space-y-5">
+                {/* RIGHT SIDE: TELEOP CONTROLS */}
+                <div className="flex-1 space-y-5 order-2 lg:order-2">
                     {/* Info banner */}
                     <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-sidebar border border-border-base">
                         <svg className="w-4 h-4 text-txt-sec flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -647,8 +647,8 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                     </div>
                 </div>
 
-                {/* RIGHT SIDE: MAPPING & VOICE CONTROLS */}
-                <div className="flex-1 flex flex-col gap-5">
+                {/* LEFT SIDE: MAPPING & VOICE CONTROLS */}
+                <div className="flex-1 flex flex-col gap-5 order-1 lg:order-1">
                     {/* LIVE MAPPING CONTROLS */}
                     <div className="flex-1 p-4 rounded-xl border border-border-base bg-sidebar shadow-inner flex flex-col">
                         <div className="flex items-center justify-between mb-3">

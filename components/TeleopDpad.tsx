@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { sendTeleopCommand, sendTeleopDoneCommand, sendMappingCommand, sendTalkCommand } from "@/lib/client-api";
 import { useLanguage } from "@/components/LanguageProvider";
+import { getSessionUiId } from "@/lib/sessionId";
 import type { GroupedRobotWithStatus } from "@/lib/api";
 
 // ============================================
@@ -83,7 +84,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
     const isPressingRef = useRef(false);
 
     const robotId = selectedGroup.rbDevice?.device_code ?? `RB${selectedGroup.groupId}`;
-    const originId = selectedGroup.uiDevice?.device_code ?? `UI_TIFA_${selectedGroup.groupId}`;
+    const originId = getSessionUiId();
 
     // Live Mapping State
     const [isMapping, setIsMapping] = useState(false);
@@ -137,7 +138,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                 code: 'MAPPING_START',
                 data: {
                     robot_id: robotId,
-                    ui_id: 'TFWB1',
+                    ui_id: originId,
                     status: true,
                     is_auto: false,
                     timestamp: new Date().toISOString()
@@ -165,7 +166,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                 code: 'MAPPING_SAVE',
                 data: {
                     robot_id: robotId,
-                    ui_id: 'TFWB1',
+                    ui_id: originId,
                     status: true,
                     is_auto: false,
                     map_name: mapName,
@@ -196,7 +197,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                 code: 'MAPPING_STOP',
                 data: {
                     robot_id: robotId,
-                    ui_id: 'TFWB1',
+                    ui_id: originId,
                     status: false,
                     is_auto: false,
                 }
@@ -224,7 +225,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                 code: 'MAPPING_FLAG',
                 data: {
                     robot_id: robotId,
-                    ui_id: 'TFWB1',
+                    ui_id: originId,
                     status: true,
                     is_auto: false,
                     goal_name: flagDestName
@@ -298,7 +299,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                     code: 'MAPPING_STOP',
                     data: {
                         robot_id: robotId,
-                        ui_id: 'TFWB1',
+                        ui_id: originId,
                         status: false,
                         is_auto: false,
                     }
@@ -428,22 +429,21 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
         const isActive = activeDirection === direction;
         return (
             <button
-                onMouseDown={() => handlePress(direction)}
-                onMouseUp={handleRelease}
-                onMouseLeave={() => {
-                    if (isActive) handleRelease();
-                }}
-                onTouchStart={(e) => {
-                    e.preventDefault(); // prevent scroll & double-tap zoom
+                onPointerDown={(e) => {
+                    e.currentTarget.setPointerCapture(e.pointerId);
                     handlePress(direction);
                 }}
-                onTouchEnd={(e) => {
-                    e.preventDefault();
+                onPointerUp={(e) => {
+                    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+                        e.currentTarget.releasePointerCapture(e.pointerId);
+                    }
                     handleRelease();
                 }}
-                onTouchCancel={(e) => {
-                    e.preventDefault();
-                    handleRelease();
+                onPointerLeave={() => {
+                    if (isActive) handleRelease();
+                }}
+                onPointerCancel={() => {
+                    if (isActive) handleRelease();
                 }}
                 onContextMenu={(e) => e.preventDefault()}
                 className={`
@@ -541,8 +541,9 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                             />
                             {/* Center STOP button */}
                             <button
-                                onMouseDown={handleRelease}
-                                onTouchStart={(e) => { e.preventDefault(); handleRelease(); }}
+                                onPointerDown={(e) => {
+                                    handleRelease();
+                                }}
                                 className={`
                                     w-full h-full flex flex-col items-center justify-center gap-1 rounded-xl border transition-all duration-150 select-none
                                     ${activeDirection

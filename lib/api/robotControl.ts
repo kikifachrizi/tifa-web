@@ -18,7 +18,7 @@ export type SendToTableInput = {
     tasks: SendToTableTaskInput[];
     map_id: number;
     robot_id: string;    // e.g. "TFRB1" — from rbDevice.device_code
-    origin_id: string;   // e.g. "TFWB1" — web dashboard (overridden by getWsUiId())
+    origin_id: string;   // e.g. "TFWB_a3f8" — unique per browser session
     speed?: string;      // 'S' | 'F' | 'VF' — navigation speed level
 };
 
@@ -158,7 +158,7 @@ export async function sendRobotToTable(input: SendToTableInput): Promise<ApiResu
                 reqested_by: 1, // hardcode to 1 to exactly match PM's working payload instead of device_id
             },
             origin: 'UI',
-            origin_id: getWsUiId(), // must match the SI session web_id
+            origin_id: input.origin_id, // unique per browser session
             timestamp,
             message_id: messageId,
         };
@@ -220,7 +220,7 @@ export type SendToMoveInput = {
     goal_type: 'HOMEBASE' | 'CHARGING';
     map_id: number;
     robot_id: string;    // e.g. "TFRB1"
-    origin_id: string;   // e.g. "TFWB1"
+    origin_id: string;   // e.g. "TFWB_a3f8"
 };
 
 /**
@@ -277,7 +277,7 @@ export async function sendRobotToMove(input: SendToMoveInput): Promise<ApiResult
                 home_base: homeBase,
             },
             origin: 'UI' as const,
-            origin_id: getWsUiId(), // must match the SI session web_id
+            origin_id: input.origin_id, // unique per browser session
             timestamp,
             message_id: messageId,
         };

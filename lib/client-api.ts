@@ -2,6 +2,8 @@
 // These functions call the Next.js API routes instead of accessing the database directly
 // Safe to use in client components ("use client")
 
+import { getSessionUiId } from '@/lib/sessionId';
+
 import type {
     Robot,
     DeviceInfo,
@@ -573,7 +575,7 @@ export async function sendTeleopCommand(payload: TeleopPayload): Promise<{ sent:
         code: 'TELEOP' as const,
         data: {
             robot_id: payload.robot_id,
-            ui_id: 'TFWB1',
+            ui_id: payload.origin_id,
             linear: payload.linear,
             angular: payload.angular,
             speed: payload.speed || 'S'
@@ -600,7 +602,7 @@ export async function sendTeleopDoneCommand(payload: TeleopDonePayload): Promise
         code: 'TELEOP_DONE' as const,
         data: {
             robot_id: payload.robot_id,
-            ui_id: 'TFWB1',
+            ui_id: payload.origin_id,
             status: 'COMPLETED'
         }
     };
@@ -659,7 +661,7 @@ export async function sendMapSelectedCommand(payload: { robot_id: string, map_id
             timestamp: now
         },
         origin: 'UI',
-        origin_id: 'TFWB1',
+        origin_id: getSessionUiId(),
         timestamp: now,
         message_id: crypto.randomUUID()
     };
@@ -707,12 +709,12 @@ export async function sendTalkCommand(payload: { robot_id: string, origin_id: st
         code: 'CONTROL',
         data: {
             type: 'control',
-            ui_id: 'TFWB1',
+            ui_id: payload.origin_id,
             action: payload.action,
             robot_id: 'SERVERAI001'
         },
         origin: 'UI',
-        origin_id: 'TFWB1'
+        origin_id: payload.origin_id
     };
     const encodedServerPayload = btoa(JSON.stringify(serverPayload));
 
@@ -721,12 +723,12 @@ export async function sendTalkCommand(payload: { robot_id: string, origin_id: st
         code: 'CONTROL',
         data: {
             type: 'control',
-            ui_id: 'TFWB1',
+            ui_id: payload.origin_id,
             action: payload.action,
             robot_id: 'TABLET001'
         },
         origin: 'UI',
-        origin_id: 'TFWB1'
+        origin_id: payload.origin_id
     };
     const encodedTabletPayload = btoa(JSON.stringify(tabletPayload));
 

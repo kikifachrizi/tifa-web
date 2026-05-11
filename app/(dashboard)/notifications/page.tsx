@@ -114,16 +114,20 @@ export default function ActivityLogPage() {
         }));
 
         // Transform WS traffic logs to unified format
-        const wsLogs: UnifiedLogItem[] = ((wsRes.data ?? []) as WsTrafficLog[]).map(ws => ({
-          id: `ws-${ws.h_ws_traffic_id}`,
-          source: 'ws_traffic' as const,
-          device_id: typeof ws.device_id === 'string' ? parseInt(ws.device_id, 10) : ws.device_id,
-          code: ws.code,
-          status: ws.code, // code acts as status for WS events
-          message: `WebSocket ${ws.code} — ${ws.direction ?? 'IN'}`,
-          payload: ws.payload,
-          created_at: ws.recorded_at,
-        }));
+        const wsLogs: UnifiedLogItem[] = ((wsRes.data ?? []) as WsTrafficLog[]).map(ws => {
+          const isInitReady = ws.code === 'INIT' && (ws.payload as any)?.status === 'READY';
+          const effectiveCode = isInitReady ? 'READY' : ws.code;
+          return {
+            id: `ws-${ws.h_ws_traffic_id}`,
+            source: 'ws_traffic' as const,
+            device_id: typeof ws.device_id === 'string' ? parseInt(ws.device_id, 10) : ws.device_id,
+            code: effectiveCode,
+            status: effectiveCode, // code acts as status for WS events
+            message: `WebSocket ${effectiveCode} — ${ws.direction ?? 'IN'}`,
+            payload: ws.payload,
+            created_at: ws.recorded_at,
+          };
+        });
 
         // Merge and sort by time descending
         let merged = [...cmdLogs, ...wsLogs].sort(

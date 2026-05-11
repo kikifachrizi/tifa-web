@@ -170,11 +170,11 @@ export default function DashboardLayout({
 
       {/* Sidebar - Forced Dark Theme to match reference UI */}
       <aside
-        className={`bg-[#0a0a0a] border-r border-[#222] flex flex-col sidebar-transition fixed inset-y-0 left-0 z-50 lg:relative lg:z-10 gpu-accelerated ${sidebarCollapsed ? 'w-20' : 'w-64'} ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        className={`bg-[#121212] border-r border-[#2E2E2E] flex flex-col sidebar-transition fixed inset-y-0 left-0 z-50 lg:relative lg:z-10 gpu-accelerated ${sidebarCollapsed ? 'w-20' : 'w-64'} ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
         style={{ contain: 'layout' }}
       >
         {/* Logo */}
-        <div className="px-5 py-5 border-b border-[#222]">
+        <div className="px-5 py-5 border-b border-[#2E2E2E]">
           <div className="flex items-center gap-3">
             {!sidebarCollapsed ? (
               <div className="flex items-center justify-center w-full">
@@ -195,7 +195,7 @@ export default function DashboardLayout({
         {/* Toggle Button */}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="mx-3 mt-4 mb-2 p-2 rounded-lg bg-[#111] hover:bg-[#222] text-gray-400 hover:text-white transition-colors flex items-center justify-center border border-[#333]"
+          className="mx-3 mt-4 mb-2 p-2 rounded-lg bg-[#1A1A1A] hover:bg-[#2A2A2A] text-gray-400 hover:text-white transition-colors flex items-center justify-center border border-[#2E2E2E]"
         >
           <svg
             className={`w-5 h-5 transition-transform duration-300 ${sidebarCollapsed ? 'rotate-180' : ''}`}
@@ -222,7 +222,7 @@ export default function DashboardLayout({
         </nav>
 
         {/* Footer */}
-        <div className={`px-4 py-4 border-t border-[#222] text-[11px] text-gray-500 ${sidebarCollapsed ? 'text-center' : ''}`}>
+        <div className={`px-4 py-4 border-t border-[#2E2E2E] text-[11px] text-gray-500 ${sidebarCollapsed ? 'text-center' : ''}`}>
           {sidebarCollapsed ? (
             <span>©</span>
           ) : (
@@ -234,7 +234,7 @@ export default function DashboardLayout({
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 min-h-0 relative z-0">
         {/* Header - Semi transparent glass - optimized */}
-        <header className="h-16 border-b border-border-base bg-card-bg/80 backdrop-blur-sm flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-[100] transition-colors duration-300 gpu-accelerated">
+        <header className="h-16 border-b border-border-base bg-card/80 backdrop-blur-md flex items-center justify-between px-4 lg:px-6 flex-shrink-0 z-[100] transition-colors duration-300 gpu-accelerated">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -275,7 +275,7 @@ export default function DashboardLayout({
         </header>
 
         {/* Page Content - with deep blue gradient background in dark mode, light in light mode managed by CSS var */}
-        <div className="flex-1 min-h-0 p-6 overflow-y-auto bg-deep-blue-gradient">{children}</div>
+        <div className="flex-1 min-h-0 p-4 md:p-6 lg:p-8 overflow-y-auto bg-deep-blue-gradient">{children}</div>
       </main>
     </div>
   );
@@ -310,12 +310,12 @@ function SidebarLink({
         <span className="text-sm font-semibold truncate">{label}</span>
       )}
       {active && (
-        <div className="absolute left-0 bottom-0 top-0 w-1.5 bg-cyan-400 rounded-r-md shadow-[0_0_10px_rgba(34,211,238,0.5)]" />
+        <div className="absolute left-0 bottom-1 top-1 w-1 bg-accent rounded-full shadow-[0_0_8px_var(--primary-glow)]" />
       )}
 
       {/* Tooltip for collapsed state */}
       {collapsed && (
-        <div className="absolute left-full ml-3 px-3 py-1.5 bg-[#1A1A1A] text-white text-xs rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl border border-[#333]">
+        <div className="absolute left-full ml-3 px-3 py-1.5 bg-[#1A1A1A] text-white text-xs rounded-md opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all whitespace-nowrap z-50 shadow-xl border border-[#2E2E2E]">
           {label}
         </div>
       )}

@@ -450,7 +450,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                 className={`
                     relative flex flex-col items-center justify-center gap-1 rounded-xl border transition-all duration-150 select-none touch-none
                     ${isActive
-                        ? "bg-txt-main text-page border border-accent shadow-md scale-95"
+                        ? "bg-accent/15 border-accent text-accent shadow-[0_0_15px_var(--primary-glow)] scale-95"
                         : "bg-sidebar border-border-base text-txt-sec hover:border-accent hover:text-txt-main"
                     }
                     active:scale-95
@@ -496,7 +496,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
 
                     {/* D-PAD */}
                     <div className="flex justify-center">
-                        <div className="grid grid-cols-3 grid-rows-3 gap-2 w-[220px] h-[220px]">
+                        <div className="grid grid-cols-3 grid-rows-3 gap-2.5 w-[280px] h-[280px]">
                             {/* Row 1: UP-LEFT - UP - UP-RIGHT */}
                             <DpadButton
                                 direction="forward_left"
@@ -546,10 +546,10 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                                     handleRelease();
                                 }}
                                 className={`
-                                    w-full h-full flex flex-col items-center justify-center gap-1 rounded-xl border transition-all duration-150 select-none
+                                    w-full h-full flex flex-col items-center justify-center gap-1 rounded-full border-2 transition-all duration-150 select-none
                                     ${activeDirection
-                                        ? "bg-rose-100 dark:bg-rose-500/20 border-rose-400 dark:border-rose-500/40 text-rose-700 dark:text-rose-400 animate-pulse"
-                                        : "bg-txt-main border-border-base text-page hover:border-accent hover:text-accent"
+                                        ? "bg-rose-500/20 border-rose-500 text-rose-500 animate-pulse shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                                        : "bg-elevated border-border-base text-txt-sec hover:border-rose-400 hover:text-rose-500"
                                     }
                                 `}
                                 aria-label="Stop"
@@ -606,9 +606,9 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
 
                     {/* Active direction indicator */}
                     {activeDirection && (
-                        <div className="flex items-center justify-center gap-2 py-2 rounded-lg bg-txt-main border border-accent animate-in fade-in slide-in-from-bottom-2">
+                        <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent/10 border border-accent/30 animate-in fade-in slide-in-from-bottom-2">
                             <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                            <span className="text-xs font-medium text-page">
+                            <span className="text-xs font-semibold text-accent">
                                 {t.holding} {t[activeDirection]}
                             </span>
                         </div>
@@ -630,9 +630,9 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                                     key={level}
                                     onClick={() => setSpeedLevel(level)}
                                     className={`
-                                        py-2 rounded-lg text-xs font-bold tracking-wider transition-all duration-150 border
+                                        py-2.5 rounded-xl text-xs font-bold tracking-wider transition-all duration-150 border
                                         ${speedLevel === level
-                                            ? "bg-txt-main text-page border-accent shadow-md"
+                                            ? "bg-accent text-white border-accent shadow-[0_0_12px_var(--primary-glow)]"
                                             : "bg-sidebar border-border-base text-txt-sec hover:border-accent hover:text-txt-main"
                                         }
                                     `}

@@ -95,7 +95,7 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="max-w-4xl mx-auto space-y-6 animate-fade-in">
+        <div className="max-w-2xl mx-auto space-y-6 animate-fade-in">
             {toast && (
                 <div className={`fixed top-20 right-6 z-[110] px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2 shadow-lg animate-in slide-in-from-top-2 ${toast.type === "success"
                     ? "bg-emerald-100 text-emerald-700 border border-emerald-300"
@@ -125,7 +125,7 @@ export default function SettingsPage() {
                 </h2>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    <div className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-blue-500 bg-blue-50/10 text-blue-500 cursor-pointer transition-all">
+                    <div className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-accent bg-accent/5 text-accent cursor-pointer transition-all hover:bg-accent/10">
                         <svg className="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                         </svg>
@@ -133,7 +133,7 @@ export default function SettingsPage() {
                         <p className="text-xs opacity-70">WiFi/Network</p>
                     </div>
 
-                    <div className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-border-base bg-sidebar/50 text-txt-sec cursor-not-allowed opacity-60">
+                    <div className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-border-base bg-elevated/50 text-txt-sec cursor-not-allowed opacity-50">
                         <svg className="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                         </svg>
@@ -142,8 +142,8 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
-                <div className="bg-blue-50/5 border border-blue-500/20 rounded-xl p-5 mb-6">
-                    <h3 className="text-sm font-semibold text-blue-500 flex items-center gap-2 mb-4">
+                <div className="bg-accent/5 border border-accent/20 rounded-xl p-5 mb-6">
+                    <h3 className="text-sm font-semibold text-accent flex items-center gap-2 mb-4">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                         </svg>
@@ -157,7 +157,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={wsUrl}
                                 onChange={(e) => setWsUrl(e.target.value)}
-                                className="w-full bg-sidebar border border-border-base rounded-lg px-4 py-2.5 text-sm text-txt-main focus:outline-none focus:border-blue-500 transition-colors"
+                                className="input-field font-mono"
                             />
                         </div>
 
@@ -167,7 +167,7 @@ export default function SettingsPage() {
                                 type="text"
                                 value={uiId}
                                 onChange={(e) => setUiId(e.target.value)}
-                                className="w-full bg-sidebar border border-border-base rounded-lg px-4 py-2.5 text-sm text-txt-main focus:outline-none focus:border-blue-500 transition-colors"
+                                className="input-field font-mono"
                             />
                         </div>
 
@@ -181,7 +181,7 @@ export default function SettingsPage() {
                                     type="text"
                                     value={sessionUiId}
                                     readOnly
-                                    className="w-full bg-sidebar/50 border border-emerald-500/30 rounded-lg px-4 py-2.5 text-sm text-emerald-400 font-mono focus:outline-none cursor-default"
+                                    className="input-field font-mono border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-elevated/50 cursor-default"
                                 />
                                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-txt-sec/50">per-session, auto-generated</span>
                             </div>
@@ -195,7 +195,7 @@ export default function SettingsPage() {
                                     type="text"
                                     value={robotId}
                                     onChange={(e) => setRobotId(e.target.value)}
-                                    className="w-full bg-sidebar border border-border-base rounded-lg px-4 py-2.5 text-sm text-txt-main focus:outline-none focus:border-blue-500 transition-colors"
+                                    className="input-field font-mono"
                                 />
                             </div>
                             <div>
@@ -204,7 +204,7 @@ export default function SettingsPage() {
                                     type="text"
                                     value={mapId}
                                     onChange={(e) => setMapId(e.target.value)}
-                                    className="w-full bg-sidebar border border-border-base rounded-lg px-4 py-2.5 text-sm text-txt-main focus:outline-none focus:border-blue-500 transition-colors"
+                                    className="input-field font-mono"
                                 />
                             </div>
                         </div>
@@ -231,7 +231,7 @@ export default function SettingsPage() {
                         <button
                             onClick={handleTestConnection}
                             disabled={testing}
-                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl border border-blue-500/50 text-blue-500 hover:bg-blue-500/10 font-semibold text-sm transition-all disabled:opacity-50"
+                            className="w-full sm:w-auto btn-secondary flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {testing ? (
                                 <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -248,7 +248,7 @@ export default function SettingsPage() {
                         <button
                             onClick={handleSave}
                             disabled={saving}
-                            className="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm shadow-lg shadow-blue-500/30 transition-all disabled:opacity-50"
+                            className="w-full sm:w-auto btn-primary flex items-center justify-center gap-2 disabled:opacity-50"
                         >
                             {saving ? (
                                 <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

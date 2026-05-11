@@ -90,8 +90,16 @@ export default function RobotReadyToast() {
         const allowedDeviceIds = [2, 13];
         const newEvents = latestEvents.filter(evt => {
             const id = typeof evt.device_id === 'string' ? parseInt(evt.device_id, 10) : evt.device_id;
+            
+            // Determine if this is a "READY" event
+            const isLegacyReady = evt.code === 'READY';
+            const isInitReady = evt.code === 'INIT' && (evt.payload as any)?.status === 'READY';
+            const isReadyEvent = isLegacyReady || isInitReady;
+            
+            const isErrorOrDisconnect = ['ERROR', 'DISCONNECT'].includes(evt.code as string);
+
             return !seenIdsRef.current.has(evt.h_ws_traffic_id) &&
-            ['READY', 'ERROR', 'DISCONNECT'].includes(evt.code) && id && allowedDeviceIds.includes(id);
+                (isReadyEvent || isErrorOrDisconnect) && id && allowedDeviceIds.includes(id);
         });
 
         if (newEvents.length > 0) {
@@ -101,13 +109,18 @@ export default function RobotReadyToast() {
                 const deviceName = parsedId
                     ? deviceNameMapRef.current.get(parsedId) ?? `Device #${parsedId}`
                     : 'Unknown Device';
+                    
+                const isReadyEvent = evt.code === 'READY' || (evt.code === 'INIT' && (evt.payload as any)?.status === 'READY');
+                // Normalize code for styling
+                const normalizedCode = isReadyEvent ? 'READY' : evt.code;
+
                 return {
                     id: `ws-${evt.h_ws_traffic_id}-${Date.now()}`,
                     deviceName,
-                    code: evt.code,
-                    message: evt.code === 'READY'
+                    code: normalizedCode as string,
+                    message: normalizedCode === 'READY'
                         ? `${deviceName} siap beroperasi!`
-                        : evt.code === 'ERROR'
+                        : normalizedCode === 'ERROR'
                             ? `${deviceName} mengalami error`
                             : `${deviceName} terputus`,
                     timestamp: evt.recorded_at,

@@ -141,41 +141,9 @@ export async function POST(request: Request) {
             try {
                 const { query } = await import('@/lib/dbClient');
                 if (payload.code === 'MAPPING_FLAG') {
-                    // Insert into m_goal with robot's current position from h_position
-                    const goalName = payload.data.goal_name || 'Flagged Destination';
-                    const goalCode = goalName.toUpperCase().replace(/\s+/g, '_');
-
-                    // Look up device_id from robot_id (device_code)
-                    const deviceRows = await query<{ device_id: number }>(
-                        `SELECT device_id FROM m_device WHERE device_code = $1 LIMIT 1`,
-                        [payload.data.robot_id]
-                    );
-                    const deviceId = deviceRows[0]?.device_id ?? null;
-
-                    // Fetch the robot's latest position
-                    let posX: number | null = null;
-                    let posY: number | null = null;
-                    let posYaw: number | null = null;
-
-                    if (deviceId) {
-                        const posRows = await query<{ x: number; y: number; yaw: number }>(
-                            `SELECT x, y, yaw FROM h_position WHERE device_id = $1 ORDER BY recorded_at DESC LIMIT 1`,
-                            [deviceId]
-                        );
-                        if (posRows.length > 0) {
-                            posX = posRows[0].x;
-                            posY = posRows[0].y;
-                            posYaw = posRows[0].yaw;
-                        }
-                    }
-
-                    console.log(`[mapping] MAPPING_FLAG: goal="${goalName}" pos=(${posX}, ${posY}, ${posYaw}) device_id=${deviceId}`);
-
-                    await query(
-                        `INSERT INTO m_goal (goal_name, goal_code, goal_type, x, y, yaw, created_at) 
-                         VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
-                        [goalName, goalCode, 'TABLE', posX, posY, posYaw]
-                    );
+                    // MAPPING_FLAG is no longer inserted into m_goal here by tifa-web.
+                    // The robot backend (tifa-be) will insert the accurate coordinates 
+                    // extracted from the map's YAML file during map upload as 'CUSTOM' goals.
                 } else if (payload.code === 'MAPPING_SAVE') {
                     // 1. Insert into m_map
                     const mapName = payload.data.map_name || `Map_${new Date().getTime()}`;

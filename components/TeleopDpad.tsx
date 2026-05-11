@@ -160,6 +160,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
 
     const handleSaveMapping = async () => {
         if (!mapName) return;
+        const sanitizedMapName = mapName.trim().replace(/\s+/g, '_');
         setIsWaitingForSaveConfirm(true);
         try {
             const result = await sendMappingCommand({
@@ -169,7 +170,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                     ui_id: originId,
                     status: true,
                     is_auto: false,
-                    map_name: mapName,
+                    map_name: sanitizedMapName,
                     category: mapCategory,
                     category_type: mapCategoryType
                 }

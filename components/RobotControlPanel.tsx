@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import TeleopDpad from "@/components/TeleopDpad";
+import { getSessionUiId } from "@/lib/sessionId";
 import {
     sendRobotToTable,
     sendRobotToMove,
@@ -248,7 +249,7 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
                 tasks: allTasks,
                 map_id: selectedMapId,
                 robot_id: selectedGroup.rbDevice?.device_code ?? `RB${selectedGroup.groupId}`,
-                origin_id: selectedGroup.uiDevice?.device_code ?? `UI_TIFA_${selectedGroup.groupId}`,
+                origin_id: getSessionUiId(),
                 speed: "S",
             };
             const result = await sendRobotToTable(payload);
@@ -288,7 +289,7 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
                 goal_type: goalType as 'HOMEBASE' | 'CHARGING',
                 map_id: selectedMapId,
                 robot_id: selectedGroup.rbDevice?.device_code ?? `RB${selectedGroup.groupId}`,
-                origin_id: selectedGroup.uiDevice?.device_code ?? `UI_TIFA_${selectedGroup.groupId}`,
+                origin_id: getSessionUiId(),
             };
             const result = await sendRobotToMove(payload);
 
@@ -388,8 +389,8 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
                         <button
                             onClick={() => setControlMode("navigation")}
                             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 ${controlMode === "navigation"
-                                ? "bg-txt-main text-page border border-txt-accent shadow-md"
-                                : "text-txt-sec hover:text-txt-main hover:bg-txt-main/5"
+                                ? "bg-accent text-white shadow-sm"
+                                : "text-txt-sec hover:text-txt-main hover:bg-elevated"
                                 }`}
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -400,8 +401,8 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
                         <button
                             onClick={() => setControlMode("teleop")}
                             className={`flex-1 flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 ${controlMode === "teleop"
-                                ? "bg-txt-main text-page border border-txt-accent shadow-md"
-                                : "text-txt-sec hover:text-txt-main hover:bg-txt-main/5"
+                                ? "bg-accent text-white shadow-sm"
+                                : "text-txt-sec hover:text-txt-main hover:bg-elevated"
                                 }`}
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -814,8 +815,8 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
                                         onClick={handleSend}
                                         disabled={isDisabled}
                                         className={`w-full py-4 rounded-xl font-bold text-base transition-all duration-200 flex items-center justify-center gap-2 mb-2 ${isDisabled
-                                            ? "bg-txt-accent/20 dark:bg-neutral-700/50 text-txt-accent/50 dark:text-neutral-500 cursor-not-allowed border border-txt-accent/10 dark:border-neutral-700"
-                                            : "bg-txt-accent dark:bg-neutral-800 text-[#171717] hover:bg-txt-accent/90 dark:hover:bg-white shadow-[0_0_20px_rgba(3,230,228,0.25)] border border-txt-accent/50 dark:border-neutral-600 active:scale-[0.98]"
+                                            ? "bg-white/10 text-white/30 cursor-not-allowed border border-white/10"
+                                            : "bg-white text-[#0B0F19] hover:bg-white/90 shadow-[0_4px_20px_rgba(255,255,255,0.15)] border border-white/20 active:scale-[0.98]"
                                             }`}
                                     >
                                         {isSending ? (

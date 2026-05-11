@@ -283,15 +283,18 @@ export default function DashboardHomePage() {
             </div>
             <div className="flex items-center gap-3 flex-shrink-0 pl-[52px] sm:pl-0">
               {selectedGroup.battery !== null && (
-                <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg ${selectedGroup.battery <= 20 ? 'bg-rose-100 dark:bg-rose-500/10 border border-rose-300 dark:border-rose-500/20' :
-                  selectedGroup.battery <= 50 ? 'bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/20' :
-                    'bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/20'
+                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${selectedGroup.battery <= 20 ? 'bg-rose-500/15 border border-rose-500/30' :
+                  selectedGroup.battery <= 50 ? 'bg-amber-500/15 border border-amber-500/30' :
+                    'bg-emerald-500/15 border border-emerald-500/30'
                   }`}>
-                  <BatteryIcon level={selectedGroup.battery} className={`w-4 h-4 ${selectedGroup.battery <= 20 ? 'text-rose-500' :
+                  <BatteryIcon level={selectedGroup.battery} className={`w-5 h-5 ${selectedGroup.battery <= 20 ? 'text-rose-500' :
                     selectedGroup.battery <= 50 ? 'text-amber-500' :
-                      'text-emerald-500'
+                      'text-emerald-400'
                     }`} />
-                  <span className="text-xs font-semibold text-txt-main">{selectedGroup.battery}%</span>
+                  <span className={`text-sm font-bold tabular-nums ${selectedGroup.battery <= 20 ? 'text-rose-400' :
+                    selectedGroup.battery <= 50 ? 'text-amber-400' :
+                      'text-emerald-400'
+                    }`}>{selectedGroup.battery}%</span>
                 </div>
               )}
               <Link
@@ -317,9 +320,9 @@ export default function DashboardHomePage() {
             <svg className="w-12 h-12 sm:w-16 sm:h-16 text-txt-accent" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" /></svg>
           </div>
           <p className="text-xs font-medium text-blue-700 dark:text-blue-400 uppercase tracking-widest">{dict.dashboard.home.active_robots}</p>
-          <p className="mt-3 text-3xl sm:text-4xl font-bold text-txt-main tracking-tight text-shadow-glow">
+          <p className="mt-3 metric-value">
             {selectedGroupId !== null ? "1" : (activeGroups.length === 0 ? "0" : `${activeGroups.length}`)}
-            {!selectedGroupId && groupedRobots.length > 0 && <span className="text-base sm:text-lg text-txt-sec ml-1">/ {groupedRobots.length}</span>}
+            {!selectedGroupId && groupedRobots.length > 0 && <span className="text-lg text-txt-sec ml-1 font-semibold">/ {groupedRobots.length}</span>}
           </p>
           <p className="mt-2 text-[11px] sm:text-xs text-txt-sec">
             {selectedGroupId !== null
@@ -336,7 +339,7 @@ export default function DashboardHomePage() {
           </p>
           <div className="flex flex-wrap items-end gap-x-5 gap-y-1 mt-3">
             <div>
-              <p className="text-3xl sm:text-4xl font-bold text-txt-main tracking-tight">
+              <p className="metric-value">
                 {avgBattery === null ? "-" : `${avgBattery}%`}
               </p>
               {selectedGroup && <p className="text-[10px] text-txt-sec font-medium mt-1 uppercase">SoC (Charge)</p>}
@@ -362,7 +365,7 @@ export default function DashboardHomePage() {
           <p className="text-xs font-medium text-rose-700 dark:text-rose-400 uppercase tracking-widest">
             {dict.dashboard.home.critical_errors}
           </p>
-          <p className="mt-3 text-3xl sm:text-4xl font-bold text-txt-main tracking-tight">
+          <p className="mt-3 metric-value">
             {errorCount === null ? "-" : errorCount}
           </p>
           <p className="mt-2 text-[11px] sm:text-xs text-txt-sec">
@@ -595,7 +598,7 @@ export default function DashboardHomePage() {
                       : item.status !== 'success' ? 'bg-rose-500 shadow-rose-500/50' : 'bg-emerald-500 shadow-emerald-500/50';
 
                     return (
-                      <div key={item.id} className="px-5 py-3 hover:bg-white/[0.02] transition-colors relative group">
+                      <div key={item.id} className="px-5 py-3.5 hover:bg-elevated/50 transition-colors relative group">
                         <div className="flex items-start gap-3">
                           <div className={`mt-1.5 h-1.5 w-1.5 rounded-full shadow-[0_0_5px] flex-shrink-0 ${dotColor}`} />
                           <div className="flex-1 min-w-0">

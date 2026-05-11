@@ -13,29 +13,45 @@
 :root {
   /* ============================================
      TIFA DASHBOARD — LIGHT MODE PALETTE
-     50% #FEFFFC  |  30% #171717  |  20% #03E6E4
+     Enterprise-grade, cooler neutrals
      ============================================ */
 
   /* Core palette */
-  --bg-page:        #FEFFFC; /* 50% — blanche white background */
-  --bg-sidebar:     #F4FFFB; /* lighter variant for sidebar */
+  --bg-page:        #F8FAFB; /* cool off-white page background */
+  --bg-sidebar:     #F1F5F9; /* slate-100 sidebar */
   --bg-card:        #FFFFFF; /* pure white cards */
-  --bg-input:       #F4FFFB; /* subtle green-tinted input bg */
+  --bg-elevated:    #F1F5F9; /* nested surfaces inside cards */
+  --bg-input:       #F1F5F9; /* neutral input background */
 
-  --text-main:      #171717; /* 30% — near-black primary text */
-  --text-secondary: #4A4A4A; /* mid-grey secondary text */
-  --text-accent:    #03E6E4; /* 20% — turquoise accent text */
+  --text-main:      #0F172A; /* slate-900 — high contrast */
+  --text-secondary: #64748B; /* slate-500 — proper WCAG AA */
+  --text-accent:    #008B8B; /* dark cyan — brand accent */
 
-  --border-color:     #E0E0E0;
-  --border-highlight: #03E6E4; /* accent border for active states */
+  --border-color:     #E2E8F0; /* slate-200 */
+  --border-highlight: #008B8B; /* accent border */
 
-  --primary-glow: rgba(3, 230, 228, 0.15);
+  --primary-glow: rgba(0, 139, 139, 0.12);
   --glass-blur: blur(0px);
 
   /* Accent colour — used for CTAs, selected states, highlights */
-  --accent: #03E6E4;
-  --accent-hover: #00C4C2;
-  --accent-muted: rgba(3, 230, 228, 0.12);
+  --accent: #008B8B;
+  --accent-hover: #006D6D;
+  --accent-muted: rgba(0, 139, 139, 0.10);
+
+  /* Semantic status colors */
+  --color-success:  #10B981;
+  --color-warning:  #F59E0B;
+  --color-error:    #EF4444;
+  --color-offline:  #64748B;
+  --color-info:     #3B82F6;
+
+  /* Type scale */
+  --text-display:   2rem;
+  --text-heading:   1.25rem;
+  --text-subhead:   0.875rem;
+  --text-body:      0.8125rem;
+  --text-caption:   0.75rem;
+  --text-micro:     0.6875rem;
 
   /* Preserved branding variables (for landing page, etc.) */
   --tifa-red:  #B6252A;
@@ -53,23 +69,26 @@
    50% #171717  |  30% #F4FFFB  |  20% #03E6E4
    ============================================ */
 .dark {
-  --bg-page:        #171717; /* 50% — dark grey background */
-  --bg-sidebar:     #1E1E1E; /* slightly lighter sidebar */
-  --bg-card:        #242424; /* elevated card surface */
+  --bg-page:        #121212; /* pure dark grey background */
+  --bg-sidebar:     #1A1A1A; /* slightly lighter sidebar */
+  --bg-card:        #1E1E1E; /* elevated card surface */
+  --bg-elevated:    #2A2A2A; /* nested surfaces */
   --bg-input:       #2A2A2A; /* input field background */
 
-  --text-main:      #F4FFFB; /* 30% — soft white primary text */
-  --text-secondary: #A0A0A0; /* muted secondary text */
-  --text-accent:    #03E6E4; /* 20% — turquoise accent */
+  --text-main:      #F1F5F9; /* slate-100 primary text */
+  --text-secondary: #A0A0A0; /* neutral grey secondary text */
+  --text-accent:    #00B4B4; /* lighter dark cyan for dark bg */
 
-  --border-color:     #333333;
-  --border-highlight: #03E6E4;
+  --border-color:     #2E2E2E; /* monochrome border */
+  --border-highlight: #00B4B4;
 
-  --primary-glow: rgba(3, 230, 228, 0.20);
+  --primary-glow: rgba(0, 180, 180, 0.15);
 
-  --accent:       #03E6E4;
-  --accent-hover: #00C4C2;
-  --accent-muted: rgba(3, 230, 228, 0.15);
+  --accent:       #00B4B4;
+  --accent-hover: #008B8B;
+  --accent-muted: rgba(0, 180, 180, 0.12);
+
+  /* Semantic status (same values, no override needed) */
 }
 
 /* TIFA Theme (for Journey page) */
@@ -94,10 +113,11 @@
   --color-foreground: var(--text-main);
 
   /* Semantic Color Tokens — used as Tailwind utilities */
-  --color-page:    var(--bg-page);
-  --color-sidebar: var(--bg-sidebar);
-  --color-card:    var(--bg-card);
-  --color-input:   var(--bg-input);
+  --color-page:      var(--bg-page);
+  --color-sidebar:   var(--bg-sidebar);
+  --color-card:      var(--bg-card);
+  --color-elevated:  var(--bg-elevated);
+  --color-input:     var(--bg-input);
 
   --color-txt-main:   var(--text-main);
   --color-txt-sec:    var(--text-secondary);
@@ -110,6 +130,13 @@
   --color-accent:       var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-muted: var(--accent-muted);
+
+  /* Semantic status — exposed as Tailwind utilities */
+  --color-success:  var(--color-success);
+  --color-warning:  var(--color-warning);
+  --color-error:    var(--color-error);
+  --color-offline:  var(--color-offline);
+  --color-info:     var(--color-info);
 
   /* TIFA brand colours — preserved for landing page */
   --color-tifa-red:   #B6252A;
@@ -409,12 +436,20 @@ body {
 }
 
 /* Glass Panel — dashboard card base */
+/* Light mode: shadow-based depth. Dark mode: border-based depth */
 .glass-panel {
   background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  border: 1px solid transparent;
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
   will-change: transform, opacity;
   transform: translateZ(0);
+}
+
+.dark .glass-panel {
+  box-shadow: none;
+  border: 1px solid var(--border-color);
 }
 
 /* Active/selected card with accent border */
@@ -427,7 +462,7 @@ body {
 /* Accent highlight: selected state for cards/buttons */
 .accent-selected {
   background-color: var(--accent);
-  color: #171717;
+  color: #0F172A;
   border-color: var(--accent);
 }
 
@@ -765,6 +800,184 @@ body {
   border-color: var(--text-accent);
   box-shadow: 0 0 0 2px var(--primary-glow);
   outline: none;
+}
+
+/* ============================================
+   STANDARDIZED INPUT FIELD
+   ============================================ */
+
+.input-field {
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.875rem;
+  color: var(--text-main);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  width: 100%;
+}
+
+.input-field:hover {
+  border-color: var(--text-secondary);
+}
+
+.input-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+  background: var(--bg-card);
+  outline: none;
+}
+
+.input-field:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--bg-elevated);
+}
+
+/* ============================================
+   STANDARDIZED BUTTON SYSTEM
+   ============================================ */
+
+.btn-primary {
+  background: var(--accent);
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 139, 139, 0.25);
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 4px 12px rgba(0, 139, 139, 0.25);
+  transform: translateY(-1px);
+}
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 139, 139, 0.2);
+}
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: var(--accent);
+  border: 1.5px solid var(--accent);
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-secondary:hover {
+  background: var(--accent-muted);
+}
+.btn-secondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-ghost:hover {
+  background: var(--bg-elevated);
+  color: var(--text-main);
+}
+
+.btn-danger {
+  background: var(--color-error);
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: none;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.25);
+}
+.btn-danger:hover {
+  background: #DC2626;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+  transform: translateY(-1px);
+}
+
+/* ============================================
+   METRIC VALUE DISPLAY
+   ============================================ */
+
+.metric-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--text-main);
+}
+
+/* ============================================
+   SKELETON LOADING
+   ============================================ */
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-elevated) 25%,
+    var(--bg-card) 50%,
+    var(--bg-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 8px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ============================================
+   FOCUS & DISABLED UTILITIES
+   ============================================ */
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Interactive card with subtle lift */
+.interactive-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.interactive-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px -5px rgba(0,0,0,0.08);
+}
+.dark .interactive-card:hover {
+  box-shadow: 0 8px 25px -5px rgba(0,0,0,0.3);
 }
 
 /* Text Gradients */

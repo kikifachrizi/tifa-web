@@ -115,14 +115,18 @@ export default function DashboardHomePage() {
           message: cmd.status_message,
           created_at: cmd.created_at,
         }));
-        const wsItems: ActivityItem[] = (wsTrafficResult.data ?? []).map(ws => ({
-          id: `ws-${ws.h_ws_traffic_id}`,
-          source: 'ws_traffic' as const,
-          code: ws.code,
-          status: ws.code,
-          message: `WebSocket ${ws.code}`,
-          created_at: ws.recorded_at,
-        }));
+        const wsItems: ActivityItem[] = (wsTrafficResult.data ?? []).map(ws => {
+          const isInitReady = ws.code === 'INIT' && (ws.payload as any)?.status === 'READY';
+          const effectiveCode = isInitReady ? 'READY' : ws.code;
+          return {
+            id: `ws-${ws.h_ws_traffic_id}`,
+            source: 'ws_traffic' as const,
+            code: effectiveCode,
+            status: effectiveCode,
+            message: `WebSocket ${effectiveCode}`,
+            created_at: ws.recorded_at,
+          };
+        });
         const isToday = (dString: string) => {
           const d = new Date(dString);
           const t = new Date();
@@ -175,14 +179,18 @@ export default function DashboardHomePage() {
             message: cmd.status_message,
             created_at: cmd.created_at,
           }));
-          const wsItems: ActivityItem[] = (wsTrafficResult.data ?? []).map(ws => ({
-            id: `ws-${ws.h_ws_traffic_id}`,
-            source: 'ws_traffic' as const,
-            code: ws.code,
-            status: ws.code,
-            message: `WebSocket ${ws.code}`,
-            created_at: ws.recorded_at,
-          }));
+          const wsItems: ActivityItem[] = (wsTrafficResult.data ?? []).map(ws => {
+            const isInitReady = ws.code === 'INIT' && (ws.payload as any)?.status === 'READY';
+            const effectiveCode = isInitReady ? 'READY' : ws.code;
+            return {
+              id: `ws-${ws.h_ws_traffic_id}`,
+              source: 'ws_traffic' as const,
+              code: effectiveCode,
+              status: effectiveCode,
+              message: `WebSocket ${effectiveCode}`,
+              created_at: ws.recorded_at,
+            };
+          });
           const isToday = (dString: string) => {
             const d = new Date(dString);
             const t = new Date();

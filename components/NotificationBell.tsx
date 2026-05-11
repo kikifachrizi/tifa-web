@@ -80,16 +80,19 @@ export default function NotificationBell({ allowedDeviceIds }: { allowedDeviceId
                 const deviceName = parsedId
                     ? deviceNameMapRef.current.get(parsedId) ?? `Device #${parsedId}`
                     : 'Unknown Device';
-                const codeLabel = WS_CODE_LABELS[evt.code] ?? evt.code;
+                
+                const isInitReady = evt.code === 'INIT' && (evt.payload as any)?.status === 'READY';
+                const effectiveCode = isInitReady ? 'READY' : evt.code;
+                const codeLabel = WS_CODE_LABELS[effectiveCode] ?? effectiveCode;
 
                 return {
                     id: `ws-${evt.h_ws_traffic_id}`,
                     device_id: evt.device_id,
                     device_name: deviceName,
                     type: 'ws_traffic' as const,
-                    title: evt.code === 'MAPPING_DONE' ? `Map: ${deviceName}` : `Robot ${codeLabel}`,
-                    message: evt.code === 'MAPPING_DONE' ? 'A new map has been successfully finalized and rendered.' : `${deviceName} — ${codeLabel}`,
-                    is_read: evt.code === 'READY' || evt.code === 'INIT', // READY/INIT are informational
+                    title: effectiveCode === 'MAPPING_DONE' ? `Map: ${deviceName}` : `Robot ${codeLabel}`,
+                    message: effectiveCode === 'MAPPING_DONE' ? 'A new map has been successfully finalized and rendered.' : `${deviceName} — ${codeLabel}`,
+                    is_read: effectiveCode === 'READY' || effectiveCode === 'INIT', // READY/INIT are informational
                     created_at: evt.recorded_at,
                 };
             });

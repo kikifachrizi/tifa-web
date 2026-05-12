@@ -49,13 +49,11 @@ export default function NotificationBell({ allowedDeviceIds }: { allowedDeviceId
         // Get low battery devices
         const { data: lowBattery } = await getLowBatteryDevices();
 
-        const currentAllowedIds = allowedDeviceIds && allowedDeviceIds.length > 0 ? allowedDeviceIds : undefined;
-
         // Generate notifications from low battery devices (filtered)
         const batteryNotifs: SystemNotification[] = (lowBattery ?? [])
             .filter(device => {
                 const id = typeof device.device_id === 'string' ? parseInt(device.device_id, 10) : device.device_id;
-                return id && (!currentAllowedIds || currentAllowedIds.includes(id));
+                return id && (!allowedDeviceIds || allowedDeviceIds.includes(id));
             })
             .map((device) => ({
                 id: `battery-${device.device_id}-${new Date().toLocaleDateString('en-GB')}`,
@@ -73,26 +71,23 @@ export default function NotificationBell({ allowedDeviceIds }: { allowedDeviceId
         const wsNotifs: SystemNotification[] = (wsTraffic ?? [])
             .filter(evt => {
                 const id = typeof evt.device_id === 'string' ? parseInt(evt.device_id, 10) : evt.device_id;
-                return ['INIT', 'READY', 'ERROR', 'DISCONNECT', 'MAPPING_DONE'].includes(evt.code) && id && (!currentAllowedIds || currentAllowedIds.includes(id));
+                return ['INIT', 'READY', 'ERROR', 'DISCONNECT', 'MAPPING_DONE'].includes(evt.code) && id && (!allowedDeviceIds || allowedDeviceIds.includes(id));
             })
             .map((evt) => {
                 const parsedId = typeof evt.device_id === 'string' ? parseInt(evt.device_id, 10) : evt.device_id;
                 const deviceName = parsedId
                     ? deviceNameMapRef.current.get(parsedId) ?? `Device #${parsedId}`
                     : 'Unknown Device';
-                
-                const isInitReady = evt.code === 'INIT' && (evt.payload as any)?.status === 'READY';
-                const effectiveCode = isInitReady ? 'READY' : evt.code;
-                const codeLabel = WS_CODE_LABELS[effectiveCode] ?? effectiveCode;
+                const codeLabel = WS_CODE_LABELS[evt.code] ?? evt.code;
 
                 return {
                     id: `ws-${evt.h_ws_traffic_id}`,
                     device_id: evt.device_id,
                     device_name: deviceName,
                     type: 'ws_traffic' as const,
-                    title: effectiveCode === 'MAPPING_DONE' ? `Map: ${deviceName}` : `Robot ${codeLabel}`,
-                    message: effectiveCode === 'MAPPING_DONE' ? 'A new map has been successfully finalized and rendered.' : `${deviceName} — ${codeLabel}`,
-                    is_read: effectiveCode === 'READY' || effectiveCode === 'INIT', // READY/INIT are informational
+                    title: evt.code === 'MAPPING_DONE' ? `Map: ${deviceName}` : `Robot ${codeLabel}`,
+                    message: evt.code === 'MAPPING_DONE' ? 'A new map has been successfully finalized and rendered.' : `${deviceName} — ${codeLabel}`,
+                    is_read: evt.code === 'READY' || evt.code === 'INIT', // READY/INIT are informational
                     created_at: evt.recorded_at,
                 };
             });
@@ -106,6 +101,8 @@ export default function NotificationBell({ allowedDeviceIds }: { allowedDeviceId
         setLoading(false);
     };
 
+    const allowedDeviceIdsStr = allowedDeviceIds?.join(',');
+
     useEffect(() => {
         void loadNotifications();
         // Refresh every 15 seconds
@@ -115,7 +112,7 @@ export default function NotificationBell({ allowedDeviceIds }: { allowedDeviceId
 
         return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [allowedDeviceIds]);
+    }, [allowedDeviceIdsStr]);
 
     // Close popup when clicking outside
     useEffect(() => {

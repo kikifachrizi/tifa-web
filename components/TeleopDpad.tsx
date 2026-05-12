@@ -138,7 +138,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                 code: 'MAPPING_START',
                 data: {
                     robot_id: robotId,
-                    ui_id: originId,
+                    ui_id: 'TFWB1',
                     status: true,
                     is_auto: false,
                     timestamp: new Date().toISOString()
@@ -167,7 +167,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                 code: 'MAPPING_SAVE',
                 data: {
                     robot_id: robotId,
-                    ui_id: originId,
+                    ui_id: 'TFWB1',
                     status: true,
                     is_auto: false,
                     map_name: sanitizedMapName,
@@ -198,7 +198,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                 code: 'MAPPING_STOP',
                 data: {
                     robot_id: robotId,
-                    ui_id: originId,
+                    ui_id: 'TFWB1',
                     status: false,
                     is_auto: false,
                 }
@@ -226,7 +226,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                 code: 'MAPPING_FLAG',
                 data: {
                     robot_id: robotId,
-                    ui_id: originId,
+                    ui_id: 'TFWB1',
                     status: true,
                     is_auto: false,
                     goal_name: flagDestName
@@ -300,7 +300,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                     code: 'MAPPING_STOP',
                     data: {
                         robot_id: robotId,
-                        ui_id: originId,
+                        ui_id: 'TFWB1',
                         status: false,
                         is_auto: false,
                     }

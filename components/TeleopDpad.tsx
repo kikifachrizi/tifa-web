@@ -30,39 +30,55 @@ const SPEED_CONFIG: Record<SpeedLevel, { linear: number; angular: number }> = {
     VF: { linear: 0.6, angular: 1.0 },
 };
 
-function getVelocity(direction: Direction, speedLevel: SpeedLevel) {
+// Acceleration / Deceleration ramp steps (fraction of target speed)
+// 4 steps: 25% → 50% → 75% → 100%
+const ACCEL_STEPS = [0.25, 0.5, 0.75, 1.0];
+// Deceleration: 75% → 50% → 25% → 0% (reverse ramp before full stop)
+const DECEL_STEPS = [0.75, 0.5, 0.25, 0];
+// Time between each ramp step (ms)
+const RAMP_INTERVAL_MS = 150;
+
+/**
+ * Get the velocity vector for a given direction at a specific fraction of the target speed.
+ * @param direction - The movement direction
+ * @param speedLevel - The selected speed tier (S/F/VF)
+ * @param fraction - 0..1 fraction of target speed (used for accel/decel ramping)
+ */
+function getVelocity(direction: Direction, speedLevel: SpeedLevel, fraction: number = 1.0) {
     const linear = { x: 0, y: 0, z: 0 };
     const angular = { x: 0, y: 0, z: 0 };
     const cfg = SPEED_CONFIG[speedLevel];
+    const lin = cfg.linear * fraction;
+    const ang = cfg.angular * fraction;
 
     switch (direction) {
         case "forward":
-            linear.x = cfg.linear;
+            linear.x = lin;
             break;
         case "backward":
-            linear.x = -cfg.linear;
+            linear.x = -lin;
             break;
         case "left":
-            angular.z = cfg.angular;
+            angular.z = ang;
             break;
         case "right":
-            angular.z = -cfg.angular;
+            angular.z = -ang;
             break;
         case "forward_left":
-            linear.x = cfg.linear;
-            angular.z = cfg.angular;
+            linear.x = lin;
+            angular.z = ang;
             break;
         case "forward_right":
-            linear.x = cfg.linear;
-            angular.z = -cfg.angular;
+            linear.x = lin;
+            angular.z = -ang;
             break;
         case "backward_left":
-            linear.x = -cfg.linear;
-            angular.z = cfg.angular;
+            linear.x = -lin;
+            angular.z = ang;
             break;
         case "backward_right":
-            linear.x = -cfg.linear;
-            angular.z = -cfg.angular;
+            linear.x = -lin;
+            angular.z = -ang;
             break;
     }
 
@@ -82,6 +98,13 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
     const [lastSendStatus, setLastSendStatus] = useState<"idle" | "ok" | "error">("idle");
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const isPressingRef = useRef(false);
+
+    // Acceleration / Deceleration state
+    const [accelPhase, setAccelPhase] = useState<number>(0); // 0..ACCEL_STEPS.length (0 = stopped)
+    const accelRampRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const decelRampRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const currentAccelStepRef = useRef<number>(0); // tracks current step index during ramp
+    const isDeceleratingRef = useRef(false);
 
     const robotId = selectedGroup.rbDevice?.device_code ?? `RB${selectedGroup.groupId}`;
     const originId = getSessionUiId();
@@ -272,10 +295,10 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
         }
     };
 
-    // Send velocity command
+    // Send velocity command with optional speed fraction for ramping
     const sendVelocity = useCallback(
-        async (direction: Direction) => {
-            const { linear, angular } = getVelocity(direction, speedLevel);
+        async (direction: Direction, fraction: number = 1.0) => {
+            const { linear, angular } = getVelocity(direction, speedLevel, fraction);
             try {
                 const result = await sendTeleopCommand({
                     robot_id: robotId,
@@ -316,48 +339,131 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
     };
 
 
-    // Start pressing: send immediately + start interval
+    // Helper to clear all ramp timers
+    const clearAllRamps = useCallback(() => {
+        if (accelRampRef.current) {
+            clearTimeout(accelRampRef.current);
+            accelRampRef.current = null;
+        }
+        if (decelRampRef.current) {
+            clearTimeout(decelRampRef.current);
+            decelRampRef.current = null;
+        }
+        if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+        }
+        isDeceleratingRef.current = false;
+    }, []);
+
+    // Start pressing: accelerate through ramp steps, then hold at full speed
     const handlePress = useCallback(
         (direction: Direction) => {
-            // Stop any existing interval (e.g. when switching directions directly in toggle mode)
-            if (intervalRef.current) {
-                clearInterval(intervalRef.current);
-                intervalRef.current = null;
-            }
-            
+            // Cancel any ongoing deceleration or previous ramp
+            clearAllRamps();
+
             isPressingRef.current = true;
+            isDeceleratingRef.current = false;
             setActiveDirection(direction);
+            currentAccelStepRef.current = 0;
 
-            // Send immediately
-            void sendVelocity(direction);
+            // Acceleration ramp function
+            const runAccelStep = (stepIndex: number) => {
+                if (!isPressingRef.current || isDeceleratingRef.current) return;
 
-            // Then send continuously every 200ms
-            intervalRef.current = setInterval(() => {
-                void sendVelocity(direction);
-            }, 200);
+                const fraction = ACCEL_STEPS[stepIndex];
+                setAccelPhase(stepIndex + 1);
+                void sendVelocity(direction, fraction);
+                currentAccelStepRef.current = stepIndex;
+
+                if (stepIndex < ACCEL_STEPS.length - 1) {
+                    // Schedule next acceleration step
+                    accelRampRef.current = setTimeout(() => {
+                        runAccelStep(stepIndex + 1);
+                    }, RAMP_INTERVAL_MS);
+                } else {
+                    // Reached full speed — keep sending at full speed every 200ms
+                    intervalRef.current = setInterval(() => {
+                        if (isPressingRef.current && !isDeceleratingRef.current) {
+                            void sendVelocity(direction, 1.0);
+                        }
+                    }, 200);
+                }
+            };
+
+            // Start acceleration from step 0
+            runAccelStep(0);
         },
-        [sendVelocity]
+        [sendVelocity, clearAllRamps]
     );
 
-    // Stop pressing: send STOP and clear interval
+    // Stop pressing: decelerate through ramp steps, then send full STOP
     const handleRelease = useCallback(() => {
+        const lastDirection = activeDirection;
         isPressingRef.current = false;
-        setActiveDirection(null);
+        isDeceleratingRef.current = true;
 
+        // Stop acceleration ramp and continuous interval
+        if (accelRampRef.current) {
+            clearTimeout(accelRampRef.current);
+            accelRampRef.current = null;
+        }
         if (intervalRef.current) {
             clearInterval(intervalRef.current);
             intervalRef.current = null;
         }
 
-        // Send STOP command
-        void sendVelocity(null);
-    }, [sendVelocity]);
+        // If no direction was active, just send stop immediately
+        if (!lastDirection) {
+            setActiveDirection(null);
+            setAccelPhase(0);
+            void sendVelocity(null, 0);
+            isDeceleratingRef.current = false;
+            return;
+        }
+
+        // Deceleration ramp function
+        const runDecelStep = (stepIndex: number) => {
+            if (isPressingRef.current) {
+                // User pressed again during deceleration, abort decel
+                isDeceleratingRef.current = false;
+                return;
+            }
+
+            const fraction = DECEL_STEPS[stepIndex];
+            setAccelPhase(Math.max(0, ACCEL_STEPS.length - stepIndex - 1));
+
+            if (fraction === 0) {
+                // Final step: full stop
+                setActiveDirection(null);
+                setAccelPhase(0);
+                void sendVelocity(null, 0);
+                isDeceleratingRef.current = false;
+            } else {
+                void sendVelocity(lastDirection, fraction);
+                if (stepIndex < DECEL_STEPS.length - 1) {
+                    decelRampRef.current = setTimeout(() => {
+                        runDecelStep(stepIndex + 1);
+                    }, RAMP_INTERVAL_MS);
+                }
+            }
+        };
+
+        // Start deceleration from step 0
+        runDecelStep(0);
+    }, [sendVelocity, activeDirection]);
 
     // Cleanup on unmount
     useEffect(() => {
         return () => {
             if (intervalRef.current) {
                 clearInterval(intervalRef.current);
+            }
+            if (accelRampRef.current) {
+                clearTimeout(accelRampRef.current);
+            }
+            if (decelRampRef.current) {
+                clearTimeout(decelRampRef.current);
             }
         };
     }, []);
@@ -604,13 +710,31 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                         </div>
                     </div>
 
-                    {/* Active direction indicator */}
+                    {/* Active direction indicator with acceleration progress */}
                     {activeDirection && (
-                        <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-accent/10 border border-accent/30 animate-in fade-in slide-in-from-bottom-2">
-                            <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-                            <span className="text-xs font-semibold text-accent">
-                                {t.holding} {t[activeDirection]}
-                            </span>
+                        <div className="flex flex-col gap-2 py-2.5 px-3 rounded-xl bg-accent/10 border border-accent/30 animate-in fade-in slide-in-from-bottom-2">
+                            <div className="flex items-center justify-center gap-2">
+                                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                                <span className="text-xs font-semibold text-accent">
+                                    {t.holding} {t[activeDirection]}
+                                </span>
+                                <span className="text-[10px] font-mono text-accent/70 ml-1">
+                                    {isDeceleratingRef.current ? "⏬" : accelPhase < ACCEL_STEPS.length ? "⏫" : ""} {Math.round((ACCEL_STEPS[Math.min(accelPhase, ACCEL_STEPS.length) - 1] ?? 0) * 100)}%
+                                </span>
+                            </div>
+                            {/* Speed ramp progress bar */}
+                            <div className="flex items-center gap-1">
+                                {ACCEL_STEPS.map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className={`h-1.5 flex-1 rounded-full transition-all duration-200 ${
+                                            i < accelPhase
+                                                ? "bg-accent shadow-[0_0_6px_rgba(34,211,238,0.6)]"
+                                                : "bg-white/10"
+                                        }`}
+                                    />
+                                ))}
+                            </div>
                         </div>
                     )}
 

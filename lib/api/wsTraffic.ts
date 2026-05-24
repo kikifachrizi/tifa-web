@@ -10,18 +10,16 @@ import type { WsTraffic, ApiResult } from '@/lib/types/database';
 export async function getLatestWsStatus(deviceId: number): Promise<ApiResult<{ isOnline: boolean; lastStatus: string; recordedAt: string }>> {
     try {
         const rows = await query<WsTraffic>(
-            `SELECT code, payload, recorded_at 
+            `SELECT code, recorded_at 
              FROM h_ws_traffic 
              WHERE device_id = $1 
-               AND code IN ('INIT', 'READY', 'DISCONNECT', 'ERROR')
+               AND code IN ('READY', 'DISCONNECT', 'ERROR')
              ORDER BY recorded_at DESC LIMIT 1`,
             [deviceId]
         );
         if (rows.length > 0) {
-            const isInitReady = rows[0].code === 'INIT' && (rows[0].payload as any)?.status === 'READY';
-            const isOnline = rows[0].code === 'READY' || isInitReady;
-            const lastStatus = isInitReady ? 'READY' : rows[0].code;
-            return { data: { isOnline, lastStatus: lastStatus as string, recordedAt: rows[0].recorded_at.toString() }, error: null };
+            const isOnline = rows[0].code === 'READY';
+            return { data: { isOnline, lastStatus: rows[0].code, recordedAt: rows[0].recorded_at.toString() }, error: null };
         }
         return { data: { isOnline: false, lastStatus: 'UNKNOWN', recordedAt: '' }, error: null };
     } catch (err: unknown) {
@@ -47,7 +45,7 @@ export async function getWsTrafficByRange(
             default: startDate = new Date(now.getTime() - 24 * 60 * 60 * 1000); break;
         }
 
-        let sql = `SELECT h_ws_traffic_id, device_id, direction, code, payload, remote_addr, recorded_at
+        let sql = `SELECT h_ws_traffic_id, device_id, direction, code, NULL as payload, remote_addr, recorded_at
              FROM h_ws_traffic
              WHERE recorded_at >= $1`;
         const params: (string | number)[] = [startDate.toISOString()];
@@ -98,7 +96,7 @@ export async function getRecentWsTraffic(
     deviceId?: number
 ): Promise<ApiResult<WsTraffic[]>> {
     try {
-        let sql = `SELECT h_ws_traffic_id, device_id, direction, code, payload, remote_addr, recorded_at
+        let sql = `SELECT h_ws_traffic_id, device_id, direction, code, NULL as payload, remote_addr, recorded_at
              FROM h_ws_traffic
              WHERE code IN ('INIT', 'READY', 'ERROR', 'DISCONNECT', 'MAPPING_DONE')
                AND recorded_at >= DATE_TRUNC('day', NOW() AT TIME ZONE 'Asia/Jakarta')`;

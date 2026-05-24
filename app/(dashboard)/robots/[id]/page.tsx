@@ -3,7 +3,7 @@
 
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
-import { getRobotById, getBatteryHistory, getActivityData, getHourlyBatteryData, getLatestWsStatus, type DeviceInfo, type BatteryRow, type ActivityData, type HourlyBatteryData } from "@/lib/api";
+import { getRobotById, getBatteryHistory, getActivityData, getHourlyBatteryData, getRobotSummary, type DeviceInfo, type BatteryRow, type ActivityData, type HourlyBatteryData } from "@/lib/api";
 
 export default function RobotDetailPage({
   params,
@@ -61,9 +61,9 @@ export default function RobotDetailPage({
       }
 
       // Load connection status
-      const { data: statusData } = await getLatestWsStatus(deviceId);
-      if (statusData) {
-        setIsOnline(statusData.isOnline);
+      const { data: summaryData } = await getRobotSummary(deviceId);
+      if (summaryData) {
+        setIsOnline(summaryData.is_online);
       }
 
       setLoading(false);

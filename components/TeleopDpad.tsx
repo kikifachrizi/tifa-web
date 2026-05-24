@@ -278,7 +278,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
         setIsTalkingLoading(true);
         try {
             const res = await sendTalkCommand({
-                robot_id: robotId,
+                robot_id: 'TFAIRB1',
                 origin_id: originId,
                 action
             });
@@ -727,11 +727,10 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                                 {ACCEL_STEPS.map((_, i) => (
                                     <div
                                         key={i}
-                                        className={`h-1.5 flex-1 rounded-full transition-all duration-200 ${
-                                            i < accelPhase
+                                        className={`h-1.5 flex-1 rounded-full transition-all duration-200 ${i < accelPhase
                                                 ? "bg-accent shadow-[0_0_6px_rgba(34,211,238,0.6)]"
                                                 : "bg-white/10"
-                                        }`}
+                                            }`}
                                     />
                                 ))}
                             </div>

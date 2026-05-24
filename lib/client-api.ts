@@ -2,8 +2,6 @@
 // These functions call the Next.js API routes instead of accessing the database directly
 // Safe to use in client components ("use client")
 
-import { getSessionUiId } from '@/lib/sessionId';
-
 import type {
     Robot,
     DeviceInfo,
@@ -575,7 +573,7 @@ export async function sendTeleopCommand(payload: TeleopPayload): Promise<{ sent:
         code: 'TELEOP' as const,
         data: {
             robot_id: payload.robot_id,
-            ui_id: payload.origin_id,
+            ui_id: 'TFWB1',
             linear: payload.linear,
             angular: payload.angular,
             speed: payload.speed || 'S'
@@ -602,7 +600,7 @@ export async function sendTeleopDoneCommand(payload: TeleopDonePayload): Promise
         code: 'TELEOP_DONE' as const,
         data: {
             robot_id: payload.robot_id,
-            ui_id: payload.origin_id,
+            ui_id: 'TFWB1',
             status: 'COMPLETED'
         }
     };
@@ -661,7 +659,7 @@ export async function sendMapSelectedCommand(payload: { robot_id: string, map_id
             timestamp: now
         },
         origin: 'UI',
-        origin_id: getSessionUiId(),
+        origin_id: 'TFWB1',
         timestamp: now,
         message_id: crypto.randomUUID()
     };
@@ -704,55 +702,30 @@ export async function getRecentWsTraffic(limit: number = 10, deviceId?: number):
 }
 
 export async function sendTalkCommand(payload: { robot_id: string, origin_id: string, action: 'TALK_ON' | 'TALK_OFF' }): Promise<{ sent: boolean; error?: string }> {
-    // 1. Payload for STT/TTS Server
-    const serverPayload = {
+    const talkPayload = {
         code: 'CONTROL',
         data: {
             type: 'control',
-            ui_id: payload.origin_id,
+            ui_id: 'TFWB1',
             action: payload.action,
-            robot_id: 'SERVERAI001'
+            robot_id: payload.robot_id
         },
         origin: 'UI',
-        origin_id: payload.origin_id
+        origin_id: 'TFWB1'
     };
-    const encodedServerPayload = btoa(JSON.stringify(serverPayload));
+    const encodedPayload = btoa(JSON.stringify(talkPayload));
 
-    // 2. Payload for Tablet App (as requested by PM)
-    const tabletPayload = {
-        code: 'CONTROL',
-        data: {
-            type: 'control',
-            ui_id: payload.origin_id,
-            action: payload.action,
-            robot_id: 'TABLET001'
-        },
-        origin: 'UI',
-        origin_id: payload.origin_id
-    };
-    const encodedTabletPayload = btoa(JSON.stringify(tabletPayload));
-
-    // Send both commands concurrently
     try {
-        const [resServer, resTablet] = await Promise.all([
-            fetch(`${BASE_URL}/robot-control?action=talk`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ encoded_payload: encodedServerPayload }),
-            }),
-            fetch(`${BASE_URL}/robot-control?action=talk`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ encoded_payload: encodedTabletPayload }),
-            })
-        ]);
+        const res = await fetch(`${BASE_URL}/robot-control?action=talk`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ encoded_payload: encodedPayload }),
+        });
 
-        const dataServer = await resServer.json();
-        const dataTablet = await resTablet.json();
-
-        // If both failed
-        if (!dataServer.sent && !dataTablet.sent) {
-            return { sent: false, error: dataServer.error || dataTablet.error || 'Failed to send to both Server and Tablet' };
+        const data = await res.json();
+        
+        if (!data.sent) {
+            return { sent: false, error: data.error || 'Failed to send to robot' };
         }
 
         return { sent: true };

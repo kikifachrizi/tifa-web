@@ -77,7 +77,7 @@ function TIFAContent() {
     const journeyItems = [
         { title: dict.journey.item_1.title, description: dict.journey.item_1.description, image: "/prosestifa_1.png", align: "left" },
         { title: dict.journey.item_2.title, description: dict.journey.item_2.description, image: "/prosestifa_2.png", align: "right" },
-        { title: dict.journey.item_3.title, description: dict.journey.item_3.description, image: "/tifa/tifa-blur.png", align: "left" },
+        { title: dict.journey.item_3.title, description: dict.journey.item_3.description, image: "/tifa_in_telcoff.jpeg", align: "left" },
         { title: dict.journey.item_4.title, description: dict.journey.item_4.description, image: "/tifa/tifa-head.png", align: "right" },
     ];
 
@@ -174,7 +174,7 @@ function TIFAContent() {
                         <div className="relative reveal-right delay-200 order-1 lg:order-2 flex justify-center lg:justify-end mt-12 lg:mt-16">
                             <div className="relative">
                                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-[#B6252A]/20 rounded-full blur-[100px]" />
-                                <Image src="/tifa/tifa-profile.png" alt="TIFA Robot" width={350} height={440} className="relative z-10 w-[180px] md:w-[230px] lg:w-[280px] h-auto object-contain drop-shadow-2xl animate-float" priority />
+                                <Image src="/TIFA_FRONT.png" alt="TIFA Robot" width={350} height={440} className="relative z-10 w-[180px] md:w-[230px] lg:w-[280px] h-auto object-contain drop-shadow-2xl animate-float" priority />
                                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[80%] h-1 bg-gradient-to-r from-transparent via-[#B6252A]/50 to-transparent rounded-full" />
                             </div>
                         </div>
@@ -211,16 +211,17 @@ function TIFAContent() {
                         <div className="flex-1 relative reveal-right delay-200">
                             <div className="relative w-full max-w-[550px] mx-auto lg:mx-0 lg:ml-auto">
                                 <div className="relative">
-                                    <Image src="/tifa/TIFA_SIDE_PROF.png" alt="TIFA Robot" width={400} height={550} className="w-[280px] md:w-[320px] lg:w-[380px] h-auto object-contain drop-shadow-2xl mx-auto" priority />
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250px] md:w-[300px] lg:w-[350px] h-[350px] lg:h-[450px] bg-black/60 rounded-full blur-[80px] pointer-events-none" />
+                                    <Image src="/TIFA_SIDE.png" alt="TIFA Robot" width={400} height={550} className="relative z-10 w-[280px] md:w-[320px] lg:w-[380px] h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] mx-auto" priority />
                                 </div>
                                 <div className="absolute top-[25%] right-[-50px] md:right-[-70px] lg:right-[-90px] z-20 animate-float">
                                     <div className="bg-[#2a2a2a] rounded-2xl p-3 shadow-2xl border border-gray-700/50">
-                                        <Image src="/tifa/TIFA_SIDE_PROF 2.png" alt="TIFA Side Profile" width={250} height={200} className="w-[180px] md:w-[220px] lg:w-[250px] h-auto object-contain rounded-xl" />
+                                        <Image src="/TIFA_HEAD_NEW.png" alt="TIFA Side Profile" width={250} height={200} className="w-[180px] md:w-[220px] lg:w-[250px] h-auto object-contain rounded-xl" />
                                     </div>
                                 </div>
                                 <div className="absolute top-[50%] left-[-40px] md:left-[-60px] lg:left-[-80px] z-20 animate-float" style={{ animationDelay: '0.5s' }}>
                                     <div className="bg-[#2a2a2a] rounded-2xl p-3 shadow-2xl border border-gray-700/50">
-                                        <Image src="/tifa/tifa-head.png" alt="TIFA Head" width={250} height={200} className="w-[180px] md:w-[220px] lg:w-[250px] h-auto object-contain rounded-xl" />
+                                        <Image src="/TIFA_HEAD_NEW_2.png" alt="TIFA Head" width={250} height={200} className="w-[180px] md:w-[220px] lg:w-[250px] h-auto object-contain rounded-xl" />
                                     </div>
                                 </div>
                             </div>
@@ -287,7 +288,7 @@ function TIFAContent() {
             {/* Exclusive Restaurant Robot Section */}
             <section id="services" className="py-20 lg:py-28 relative overflow-hidden">
                 <div className="absolute inset-0">
-                    <Image src="/tifa/tifa-blur.png" alt="TIFA in Restaurant" fill className="object-cover" />
+                    <Image src="/tifa_in_telcoff.jpeg" alt="TIFA in Restaurant" fill className="object-cover object-[75%_center]" />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#1F1F1F] via-[#1F1F1F]/80 to-[#1F1F1F]/40" />
                 </div>
                 <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-12">
@@ -301,16 +302,16 @@ function TIFAContent() {
                             <p className="text-gray-400 leading-relaxed text-base md:text-lg max-w-md">{dict.features.subtitle}</p>
                         </div>
                         <div className="reveal-right delay-200">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8 md:pb-12">
                                 {[dict.features.card_1, dict.features.card_2, dict.features.card_3, dict.features.card_4].map((card, idx) => (
-                                    <div key={idx} className="group relative bg-gradient-to-br from-[#2a2a2a] to-[#1A1A1A] rounded-2xl p-6 border border-white/10 shadow-2xl hover:border-[#B6252A]/50 hover:shadow-[0_0_30px_rgba(182,37,42,0.2)] transition-all duration-500 hover:-translate-y-2 overflow-hidden">
-                                        <div className="absolute inset-0 bg-gradient-to-br from-[#B6252A]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                                    <div key={idx} className="group relative backdrop-blur-xl bg-black/40 rounded-3xl p-6 md:p-8 border border-white/10 shadow-2xl hover:border-[#B6252A]/50 hover:bg-black/60 transition-all duration-500 hover:-translate-y-2 overflow-hidden">
+                                        <div className="absolute inset-0 bg-gradient-to-br from-[#B6252A]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                                         <div className="relative z-10">
-                                            <div className="flex items-center gap-4 mb-4">
-                                                <div className="w-12 h-12 flex-shrink-0 bg-[#B6252A]/20 border border-[#B6252A]/30 rounded-xl flex items-center justify-center group-hover:bg-[#B6252A] group-hover:border-[#B6252A] group-hover:scale-110 transition-all duration-500 shadow-lg shadow-[#B6252A]/10">
-                                                    <svg className="w-6 h-6 text-[#B6252A] group-hover:text-white transition-colors duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+                                            <div className="flex flex-col gap-4 mb-4">
+                                                <div className="w-14 h-14 flex-shrink-0 bg-gradient-to-br from-[#B6252A]/30 to-black/50 border border-[#B6252A]/30 rounded-2xl flex items-center justify-center group-hover:bg-[#B6252A] group-hover:border-[#B6252A] group-hover:rotate-6 transition-all duration-500 shadow-lg shadow-[#B6252A]/20">
+                                                    <svg className="w-7 h-7 text-[#B6252A] group-hover:text-white transition-colors duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
                                                 </div>
-                                                <h3 className="text-white font-bold text-lg leading-tight">{card.title}</h3>
+                                                <h3 className="text-white font-bold text-xl leading-tight">{card.title}</h3>
                                             </div>
                                             <p className="text-gray-300 text-sm leading-relaxed">{card.description}</p>
                                         </div>
@@ -332,8 +333,8 @@ function TIFAContent() {
                     <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
                         <div className="reveal-left">
                             <div className="relative">
-                                <Image src="/tifa/tifa-profile.png" alt="TIFA Robot" width={400} height={500} className="w-80 mx-auto h-auto object-contain drop-shadow-2xl" />
-                                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-80 h-40 bg-[#B6252A]/20 rounded-full blur-3xl -z-10" />
+                                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[280px] h-[380px] bg-[#B6252A]/15 rounded-full blur-[80px] pointer-events-none" />
+                                <Image src="/TIFA_FRONT.png" alt="TIFA Robot" width={400} height={500} className="relative z-10 w-80 mx-auto h-auto object-contain drop-shadow-[0_20px_50px_rgba(0,0,0,0.3)]" />
                             </div>
                         </div>
                         <div className="reveal-right delay-200">

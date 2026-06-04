@@ -259,7 +259,7 @@ function DiagonalContent() {
                 <span className="text-xs text-gray-400 font-medium tracking-wide">{dict.products.category_amr}</span>
               </div>
               <div className="pt-16 pb-8 px-8 bg-gradient-to-b from-[#f8f9fa] to-[#e9ecef] flex items-center justify-center h-[280px]">
-                <Image src="/diagonal/tifa-profile-1.png" alt="TIFA Robot" width={220} height={280} className="w-auto h-56 object-contain group-hover:scale-105 transition-transform duration-500 drop-shadow-xl" />
+                <Image src="/TIFA_FRONT.png" alt="TIFA Robot" width={220} height={280} className="w-auto h-56 object-contain group-hover:scale-105 transition-transform duration-500 drop-shadow-xl" />
               </div>
               <div className="p-8 flex flex-col flex-grow">
                 <h3 className="text-xl font-bold mb-2 text-white min-h-[56px]">{dict.products.tifa.name}</h3>

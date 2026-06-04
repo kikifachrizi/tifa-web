@@ -54,19 +54,19 @@ export const tifaEn = {
         subtitle: "Designed to deliver safer operations, smarter interactions, and seamless restaurant efficiency.",
         card_1: {
             title: "Autonomous Operation",
-            description: "TIFA is equipped with intelligent sensors and an autonomous navigation system that can detect its surroundings in real time. The robot can stop precisely, avoid obstacles, and adjust its movements to ensure the safety of customers and the dining area.",
+            description: "Smart sensors & autonomous navigation detect surroundings in real-time to avoid obstacles and ensure dining area safety.",
         },
         card_2: {
             title: "Multimodal Interaction",
-            description: "TIFA supports multimodal interactions through AI voice, visual feedback, and an intuitive touch system. This approach creates natural and enjoyable interactions, making TIFA not just a tool, but a friendly service partner for customers.",
+            description: "Supports AI voice, visual feedback, and intuitive touch systems for a natural, friendly customer interaction.",
         },
         card_3: {
             title: "Easy to Use",
-            description: "TIFA can adapt to a variety of restaurant layouts without complex installation. Its quick setup process and easy-to-use interface allow staff to operate TIFA without complex technical training.",
+            description: "Practical design with no complex installation. The intuitive interface allows staff to operate easily without special training.",
         },
         card_4: {
             title: "Reliable & Scalable System",
-            description: "TIFA is designed with a modular architecture and an integrated web-based dashboard system, allowing for monitoring of performance, battery status, and future feature development according to restaurant operational needs.",
+            description: "Modular architecture with integrated web dashboard for easy performance monitoring and future feature scalability.",
         },
     },
     video: {
@@ -182,19 +182,19 @@ export const tifaId = {
         subtitle: "Dirancang untuk memberikan operasi yang lebih aman, interaksi yang lebih cerdas, dan efisiensi restoran yang mulus.",
         card_1: {
             title: "Operasi Otonom",
-            description: "TIFA dilengkapi sensor cerdas dan sistem navigasi otonom yang dapat mendeteksi lingkungan sekitar secara real time. Robot dapat berhenti dengan presisi, menghindari rintangan, dan menyesuaikan pergerakannya untuk memastikan keselamatan pelanggan dan area makan.",
+            description: "Sensor cerdas & navigasi otonom mendeteksi lingkungan real-time, menghindari rintangan, dan menjamin keselamatan area makan.",
         },
         card_2: {
             title: "Interaksi Multimodal",
-            description: "TIFA mendukung interaksi multimodal melalui suara AI, umpan balik visual, dan sistem sentuh yang intuitif. Pendekatan ini menciptakan interaksi yang natural dan menyenangkan, menjadikan TIFA bukan sekadar alat, tapi mitra layanan yang ramah bagi pelanggan.",
+            description: "Mendukung suara AI, umpan balik visual, dan sistem sentuh intuitif untuk interaksi yang natural dan ramah pelanggan.",
         },
         card_3: {
             title: "Mudah Digunakan",
-            description: "TIFA dapat beradaptasi dengan berbagai tata letak restoran tanpa instalasi yang rumit. Proses setup yang cepat dan antarmuka yang mudah digunakan memungkinkan staf mengoperasikan TIFA tanpa pelatihan teknis yang kompleks.",
+            description: "Desain praktis tanpa instalasi rumit. Antarmuka mudah dipahami sehingga staf bisa mengoperasikannya tanpa pelatihan khusus.",
         },
         card_4: {
             title: "Sistem Andal & Skalabel",
-            description: "TIFA dirancang dengan arsitektur modular dan sistem dashboard berbasis web terintegrasi, memungkinkan monitoring performa, status baterai, dan pengembangan fitur masa depan sesuai kebutuhan operasional restoran.",
+            description: "Arsitektur modular dengan dashboard web terintegrasi memudahkan monitoring performa dan pengembangan fitur di masa depan.",
         },
     },
     video: {

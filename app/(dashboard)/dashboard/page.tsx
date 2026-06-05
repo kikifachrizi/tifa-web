@@ -29,13 +29,16 @@ type ActivityItem = {
   status: string | null;
   message: string | null;
   created_at: string;
+  device_id?: number | null;
 };
 
 export default function DashboardHomePage() {
   const { dict } = useLanguage();
 
-  // Robot selection state - now uses grouped robots
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [showFleetOverview, setShowFleetOverview] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+
   const [groupedRobots, setGroupedRobots] = useState<GroupedRobotWithStatus[]>([]);
   const [activeGroups, setActiveGroups] = useState<GroupedRobotWithStatus[]>([]);
   const [inactiveGroups, setInactiveGroups] = useState<GroupedRobotWithStatus[]>([]);
@@ -49,6 +52,39 @@ export default function DashboardHomePage() {
     warning: 0,
     healthy: 0,
   });
+
+  // Load from localStorage
+  useEffect(() => {
+    const savedGroupId = localStorage.getItem('tifa_selected_robot_group');
+    if (savedGroupId && savedGroupId !== 'fleet') {
+      setSelectedGroupId(savedGroupId);
+      setShowFleetOverview(false);
+    } else {
+      setSelectedGroupId(null);
+      setShowFleetOverview(true);
+    }
+    setIsInitializing(false);
+  }, []);
+
+  // Update localStorage when selection changes
+  useEffect(() => {
+    if (!isInitializing) {
+      if (selectedGroupId) {
+        localStorage.setItem('tifa_selected_robot_group', selectedGroupId);
+      } else {
+        localStorage.setItem('tifa_selected_robot_group', 'fleet');
+      }
+    }
+  }, [selectedGroupId, isInitializing]);
+
+  const handleRobotSelect = (groupId: string | null) => {
+    setSelectedGroupId(groupId);
+    if (groupId === null) {
+      setShowFleetOverview(true);
+    } else {
+      setShowFleetOverview(false);
+    }
+  };
 
   // Load all devices and group them
   useEffect(() => {
@@ -114,6 +150,7 @@ export default function DashboardHomePage() {
           status: cmd.status,
           message: cmd.status_message,
           created_at: cmd.created_at,
+          device_id: cmd.device_id,
         }));
         const wsItems: ActivityItem[] = (wsTrafficResult.data ?? []).map(ws => {
           const isInitReady = ws.code === 'INIT' && (ws.payload as any)?.status === 'READY';
@@ -125,6 +162,7 @@ export default function DashboardHomePage() {
             status: effectiveCode,
             message: `WebSocket ${effectiveCode}`,
             created_at: ws.recorded_at,
+            device_id: ws.device_id,
           };
         });
         const isToday = (dString: string) => {
@@ -138,16 +176,15 @@ export default function DashboardHomePage() {
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
           .slice(0, 10);
         setActivityItems(allItems);
-      } else {
+      } else if (showFleetOverview) {
         // Load all stats for fleet
         const [statsResult, wsTrafficResult] = await Promise.all([
           getDashboardStats(),
-          getRecentWsTraffic(20),
+          getRecentWsTraffic(100), // Increase limit for fleet overview log matching
         ]);
         const stats = statsResult.data;
 
         if (stats) {
-          
           // Calculate fleet battery metrics based on ALL robots (Last Known State of Charge)
           const validRobots = groupedRobots.filter(g => g.battery !== null);
           if (validRobots.length > 0) {
@@ -178,6 +215,7 @@ export default function DashboardHomePage() {
             status: cmd.status,
             message: cmd.status_message,
             created_at: cmd.created_at,
+            device_id: cmd.device_id,
           }));
           const wsItems: ActivityItem[] = (wsTrafficResult.data ?? []).map(ws => {
             const isInitReady = ws.code === 'INIT' && (ws.payload as any)?.status === 'READY';
@@ -189,6 +227,7 @@ export default function DashboardHomePage() {
               status: effectiveCode,
               message: `WebSocket ${effectiveCode}`,
               created_at: ws.recorded_at,
+              device_id: ws.device_id,
             };
           });
           const isToday = (dString: string) => {
@@ -199,15 +238,15 @@ export default function DashboardHomePage() {
 
           const allItems = [...cmdItems, ...wsItems]
             .filter(item => isToday(item.created_at))
-            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            .slice(0, 10);
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+          // We don't slice immediately so we can distribute logs to each robot's card
           setActivityItems(allItems);
         }
       }
     };
 
     void loadStats();
-  }, [selectedGroup, groupedRobots]);
+  }, [selectedGroup, groupedRobots, showFleetOverview]);
 
   const validFleet = groupedRobots.filter(g => g.battery !== null).length;
   
@@ -224,28 +263,75 @@ export default function DashboardHomePage() {
       ? 0
       : Math.round((batteryBuckets.healthy / validFleet) * 100);
 
+  if (isInitializing) {
+    return (
+      <div className="flex justify-center items-center h-[50vh]">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  const renderActivityItem = (item: ActivityItem) => {
+    const isWs = item.source === 'ws_traffic';
+    const dotColor = isWs
+      ? item.code === 'READY' ? 'bg-emerald-500 shadow-emerald-500/50'
+        : item.code === 'ERROR' ? 'bg-rose-500 shadow-rose-500/50'
+        : item.code === 'DISCONNECT' ? 'bg-slate-400 shadow-slate-400/50'
+        : 'bg-blue-500 shadow-blue-500/50' // INIT
+      : item.status !== 'success' ? 'bg-rose-500 shadow-rose-500/50' : 'bg-emerald-500 shadow-emerald-500/50';
+
+    return (
+      <div key={item.id} className="flex items-start gap-2.5 py-2 group">
+        <div className={`mt-1 h-1.5 w-1.5 rounded-full flex-shrink-0 ${dotColor}`} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="text-[10px] font-medium text-txt-main font-mono truncate">
+              {item.code || "UNKNOWN"}
+            </span>
+            {isWs && (
+              <span className="text-[8px] px-1 py-[1px] rounded bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-mono border border-indigo-300 dark:border-indigo-500/20 leading-none">
+                WS
+              </span>
+            )}
+            <span className="text-[9px] text-txt-sec ml-auto whitespace-nowrap">
+              {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+          {item.message ? (
+            <p className="text-[10px] text-txt-sec truncate group-hover:whitespace-normal group-hover:text-txt-main transition-colors">
+              {item.message}
+            </p>
+          ) : (
+            <p className="text-[9px] text-txt-sec uppercase tracking-wider font-semibold mt-0.5">
+              {item.status}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
       {/* Header with Robot Selector and Notification Bell */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-[60]">
         <div>
           <h1 className="text-2xl font-bold text-txt-main tracking-tight">
-            {dict.dashboard.home.title}
+            {showFleetOverview ? dict.dashboard.home.fleet_overview_title : dict.dashboard.home.title}
           </h1>
           <p className="text-sm text-txt-sec">
-            {dict.dashboard.home.subtitle}
+            {showFleetOverview ? dict.dashboard.home.fleet_overview_subtitle : dict.dashboard.home.subtitle}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 md:gap-4">
-          {/* New Robot Selector Modal */}
           <RobotSelectorModal
             selectedGroupId={selectedGroupId}
             groupedRobots={groupedRobots}
             activeCount={activeGroups.length}
-            onSelect={setSelectedGroupId}
+            onSelect={handleRobotSelect}
             allRobotsLabel={dict.dashboard.home.all_robots}
-            selectRobotLabel={dict.dashboard.home.select_robot}
+            selectRobotLabel={dict.dashboard.home.switch_robot}
             activeCountLabel={dict.dashboard.home.active_count}
           />
 
@@ -254,7 +340,103 @@ export default function DashboardHomePage() {
         </div>
       </div>
 
-      {/* Selected Robot Info Banner */}
+      {showFleetOverview ? (
+        /* FLEET OVERVIEW / ROBOT PICKER SCREEN */
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {groupedRobots.length === 0 ? (
+            <div className="text-center p-12 glass-panel rounded-2xl border-dashed border-2 border-border-base mt-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-sidebar mb-4 border border-border-base">
+                <svg className="w-8 h-8 text-txt-sec" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                </svg>
+              </div>
+              <p className="text-lg font-semibold text-txt-main">{dict.dashboard.home.robot_picker_no_robots}</p>
+              <p className="text-sm text-txt-sec mt-2">Tambahkan robot terlebih dahulu melalui halaman Kelola Robot.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mt-6">
+              {groupedRobots.map(robot => {
+                // Get 2 latest activity items for this robot
+                const robotActivities = activityItems.filter(item => 
+                  item.device_id !== undefined && robot.devices.some(d => d.device_id === item.device_id)
+                ).slice(0, 3);
+
+                return (
+                  <button
+                    key={robot.groupId}
+                    onClick={() => handleRobotSelect(robot.groupId)}
+                    className="group flex flex-col justify-between p-6 rounded-2xl glass-panel border border-border-base hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all text-left shadow-lg hover:shadow-emerald-500/10 min-h-[220px] relative overflow-hidden"
+                  >
+                    <div className={`absolute top-0 right-0 w-24 h-24 ${robot.isOnline ? 'bg-emerald-100 dark:bg-emerald-500/10' : 'bg-slate-50 dark:bg-slate-500/5'} rounded-bl-full -mr-10 -mt-10 transition-transform group-hover:scale-110`}></div>
+                    
+                    <div className="relative z-10 flex-1 w-full">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shadow-inner group-hover:scale-105 transition-transform ${robot.isOnline ? 'bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' : 'bg-slate-100 dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500'}`}>
+                          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
+                          </svg>
+                        </div>
+                        {robot.isOnline ? (
+                          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Online</span>
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                            <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                            <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Offline</span>
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <h3 className="text-lg font-bold text-txt-main group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                          {robot.displayName}
+                        </h3>
+                        <div className="flex items-center gap-3 mt-2">
+                          {robot.battery !== null && (
+                            <div className="flex items-center gap-1 text-xs font-semibold text-txt-sec">
+                              <BatteryIcon level={robot.battery} className={`w-4 h-4 ${robot.battery <= 20 ? 'text-rose-500' : robot.battery <= 50 ? 'text-amber-500' : 'text-emerald-500'}`} />
+                              <span className={robot.battery <= 20 ? 'text-rose-500' : ''}>{robot.battery}%</span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-1 text-[10px] font-mono text-txt-sec bg-sidebar px-1.5 py-0.5 rounded border border-border-base">
+                            {robot.rbDevice?.device_code || 'N/A'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-5 pt-3 border-t border-border-base w-full">
+                        <p className="text-[10px] text-txt-sec font-semibold uppercase tracking-wider mb-2">Aktivitas Terakhir</p>
+                        {robotActivities.length > 0 ? (
+                          <div className="space-y-1">
+                            {robotActivities.map(item => renderActivityItem(item))}
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-txt-sec italic">Tidak ada aktivitas baru hari ini.</p>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : (
+        /* SINGLE ROBOT DASHBOARD VIEW */
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-4">
+          <button 
+            onClick={() => handleRobotSelect(null)}
+            className="flex items-center gap-1.5 text-sm font-medium text-txt-sec hover:text-blue-500 transition-colors w-fit group"
+          >
+            <svg className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            {dict.dashboard.home.robot_picker_fleet_overview || 'Kembali ke Semua Robot'}
+          </button>
+          
+          {/* Selected Robot Info Banner */}
       {selectedGroup && (
         <div className="glass-panel rounded-xl p-4 border-l-4 border-blue-500">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -587,58 +769,16 @@ export default function DashboardHomePage() {
                   {dict.dashboard.home.no_activity}
                 </div>
               ) : (
-                <div className="divide-y divide-border-base">
-                  {activityItems.map((item) => {
-                    const isWs = item.source === 'ws_traffic';
-                    const dotColor = isWs
-                      ? item.code === 'READY' ? 'bg-emerald-500 shadow-emerald-500/50'
-                        : item.code === 'ERROR' ? 'bg-rose-500 shadow-rose-500/50'
-                        : item.code === 'DISCONNECT' ? 'bg-slate-400 shadow-slate-400/50'
-                        : 'bg-blue-500 shadow-blue-500/50' // INIT
-                      : item.status !== 'success' ? 'bg-rose-500 shadow-rose-500/50' : 'bg-emerald-500 shadow-emerald-500/50';
-
-                    return (
-                      <div key={item.id} className="px-5 py-3.5 hover:bg-elevated/50 transition-colors relative group">
-                        <div className="flex items-start gap-3">
-                          <div className={`mt-1.5 h-1.5 w-1.5 rounded-full shadow-[0_0_5px] flex-shrink-0 ${dotColor}`} />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between mb-0.5">
-                              <div className="flex items-center gap-1.5">
-                                <span className="text-xs font-medium text-txt-main font-mono truncate">
-                                  {item.code || "UNKNOWN"}
-                                </span>
-                                {isWs && (
-                                  <span className="text-[8px] px-1 py-0.5 rounded bg-indigo-100 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 font-mono border border-indigo-300 dark:border-indigo-500/20 leading-none">
-                                    WS
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-[10px] text-txt-sec whitespace-nowrap ml-2">
-                                {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </div>
-
-                            {item.message && (
-                              <p className="text-[11px] text-txt-sec truncate group-hover:whitespace-normal group-hover:text-txt-main transition-colors">
-                                {item.message}
-                              </p>
-                            )}
-                            {!item.message && (
-                              <p className="text-[10px] text-txt-sec uppercase tracking-wider font-semibold mt-0.5">
-                                {item.status}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                <div className="divide-y divide-border-base px-5">
+                  {activityItems.slice(0, 10).map(item => renderActivityItem(item))}
                 </div>
               )}
             </div>
           </div>
         </div>
       </div>
+      </div>
+      )}
     </div>
   );
 }

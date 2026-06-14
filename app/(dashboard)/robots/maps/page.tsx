@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
-import { getAllMaps, uploadMapFull, getDraftGoals, getGoalsByMap, createDestination as apiCreateGoal, updateDestination as apiUpdateGoal, deleteDestination as apiDeleteGoal, type Map, type Goal } from "@/lib/api";
+import { getAllMaps, uploadMapFull, deleteMap, getDraftGoals, getGoalsByMap, createDestination as apiCreateGoal, updateDestination as apiUpdateGoal, deleteDestination as apiDeleteGoal, type Map, type Goal } from "@/lib/api";
 
 type Category = {
     category_id: number | null;
@@ -165,6 +165,25 @@ export default function ManageMapsPage() {
             setError(e instanceof Error ? e.message : "Failed to delete goal");
             setTimeout(() => setError(null), 3000);
         }
+    };
+
+    const handleDeleteMap = async (mapId: number, mapName: string) => {
+        if (!confirm(`Are you sure you want to delete map "${mapName}"? This will also delete all associated destinations.`)) return;
+        
+        try {
+            const res = await deleteMap(mapId);
+            if (res.error) {
+                setError(res.error);
+            } else {
+                setSuccess(`Map "${mapName}" deleted successfully.`);
+                setExpandedMapId(null);
+                await loadMaps();
+            }
+        } catch (e: unknown) {
+            setError(e instanceof Error ? e.message : "Failed to delete map");
+        }
+        setTimeout(() => setSuccess(null), 3000);
+        setTimeout(() => setError(null), 3000);
     };
 
     useEffect(() => {
@@ -389,7 +408,7 @@ export default function ManageMapsPage() {
                                                 <button 
                                                     className="p-2 text-txt-sec hover:text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:bg-rose-500/10 rounded-lg transition-colors" 
                                                     title={dict.dashboard.maps?.delete_map || "Delete"}
-                                                    onClick={(e) => { e.stopPropagation(); /* TODO */ }}
+                                                    onClick={(e) => { e.stopPropagation(); handleDeleteMap(map.map_id, map.map_name); }}
                                                 >
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                 </button>

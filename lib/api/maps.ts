@@ -105,3 +105,28 @@ export async function getMapCount(): Promise<ApiResult<number>> {
         };
     }
 }
+
+/**
+ * Delete single map by ID
+ */
+export async function deleteMap(mapId: number): Promise<ApiResult<null>> {
+    try {
+        // Delete related goals
+        await query(`DELETE FROM m_goal WHERE map_id = $1`, [mapId]);
+        // Delete related map versions
+        await query(`DELETE FROM m_map_version WHERE map_id = $1`, [mapId]);
+        // Delete the map
+        await query(`DELETE FROM m_map WHERE map_id = $1`, [mapId]);
+
+        return {
+            data: null,
+            error: null,
+        };
+    } catch (err: unknown) {
+        const error = err as Error;
+        return {
+            data: null,
+            error: error.message ?? 'Database error',
+        };
+    }
+}

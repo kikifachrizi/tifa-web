@@ -338,6 +338,13 @@ export async function uploadMapFull(formData: FormData): Promise<ApiResult<Recor
     }
 }
 
+export async function deleteMap(mapId: number): Promise<ApiResult<null>> {
+    const res = await fetch(`${BASE_URL}/maps?action=delete&id=${mapId}`, {
+        method: 'DELETE',
+    });
+    return res.json();
+}
+
 // ============================================
 // AUTH OPERATIONS
 // ============================================

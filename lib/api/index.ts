@@ -107,6 +107,8 @@ export {
     getMapCount,
     uploadMapFull,
     deleteMap,
+    getMapFiles,
+    getMapImageUrl,
     // Per-robot summary operations
     getRobotSummary,
     getActiveRobotsWithStatus,

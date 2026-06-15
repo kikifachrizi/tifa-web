@@ -345,6 +345,15 @@ export async function deleteMap(mapId: number): Promise<ApiResult<null>> {
     return res.json();
 }
 
+export async function getMapFiles(mapId: number): Promise<ApiResult<{ map: Map, files: any[] }>> {
+    const res = await fetch(`${BASE_URL}/maps/${mapId}`);
+    return res.json();
+}
+
+export function getMapImageUrl(mapId: number): string {
+    return `${BASE_URL}/maps/${mapId}/image`;
+}
+
 // ============================================
 // AUTH OPERATIONS
 // ============================================

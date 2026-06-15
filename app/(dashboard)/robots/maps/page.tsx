@@ -26,6 +26,133 @@ type Destination = {
     is_home: number;
 };
 
+// Component to render PGM images on a canvas
+const PgmViewer = ({ url, alt }: { url: string; alt: string }) => {
+    const [error, setError] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        let isMounted = true;
+        const fetchAndRender = async () => {
+            try {
+                setLoading(true);
+                setError(false);
+                const res = await fetch(url);
+                if (!res.ok) throw new Error('Fetch failed');
+                
+                const buffer = await res.arrayBuffer();
+                const data = new Uint8Array(buffer);
+                
+                // Parse PGM
+                let offset = 0;
+                const skipWhitespaceAndComments = () => {
+                    while (offset < data.length) {
+                        while (offset < data.length && data[offset] <= 32) offset++;
+                        if (offset < data.length && data[offset] === 35) { // '#'
+                            while (offset < data.length && data[offset] !== 10) offset++;
+                        } else {
+                            break;
+                        }
+                    }
+                };
+
+                const readToken = () => {
+                    skipWhitespaceAndComments();
+                    let token = '';
+                    while (offset < data.length && data[offset] > 32) {
+                        token += String.fromCharCode(data[offset++]);
+                    }
+                    return token;
+                };
+
+                const magic = readToken();
+                if (magic !== 'P5') {
+                    // Try to fall back to normal image if it's not P5 (e.g. it was a PNG all along)
+                    if (isMounted) setError(true);
+                    return;
+                }
+
+                const width = parseInt(readToken(), 10);
+                const height = parseInt(readToken(), 10);
+                const maxVal = parseInt(readToken(), 10);
+
+                if (offset < data.length && data[offset] <= 32) offset++; // skip single whitespace
+
+                if (isNaN(width) || isNaN(height) || isNaN(maxVal)) {
+                    if (isMounted) setError(true);
+                    return;
+                }
+
+                const canvas = canvasRef.current;
+                if (!canvas) return;
+                
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) return;
+
+                const imgData = ctx.createImageData(width, height);
+                const pixels = imgData.data;
+
+                let pIdx = 0;
+                for (let i = 0; i < width * height; i++) {
+                    if (offset >= data.length) break;
+                    let val = data[offset++];
+                    if (maxVal !== 255) val = Math.floor((val / maxVal) * 255);
+                    const idx = pIdx * 4;
+                    pixels[idx] = val;
+                    pixels[idx + 1] = val;
+                    pixels[idx + 2] = val;
+                    pixels[idx + 3] = 255;
+                    pIdx++;
+                }
+
+                ctx.putImageData(imgData, 0, 0);
+                if (isMounted) setLoading(false);
+            } catch (err) {
+                console.error("Error rendering map:", err);
+                if (isMounted) setError(true);
+            }
+        };
+
+        fetchAndRender();
+
+        return () => { isMounted = false; };
+    }, [url]);
+
+    if (error) {
+        // Fallback to normal img tag which might trigger its own onError, or just show fallback UI
+        return (
+            <img 
+                src={url} 
+                alt={alt}
+                className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    const fallback = (e.target as HTMLImageElement).nextElementSibling as HTMLElement;
+                    if (fallback) fallback.style.display = 'flex';
+                }}
+            />
+        );
+    }
+
+    return (
+        <div className="relative w-full h-full flex items-center justify-center">
+            {loading && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+            )}
+            <canvas 
+                ref={canvasRef} 
+                className={`max-w-full max-h-full object-contain rounded-lg shadow-lg bg-gray-200 dark:bg-gray-800 transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
+                title={alt}
+            />
+        </div>
+    );
+};
+
 export default function ManageMapsPage() {
     const { dict } = useLanguage();
     const [maps, setMaps] = useState<Map[]>([]);
@@ -882,22 +1009,12 @@ export default function ManageMapsPage() {
                                     </div>
                                 ) : (
                                     <div className="w-full h-full flex flex-col items-center justify-center relative group">
-                                        {/* Use img tag for png/jpg files, or a canvas wrapper for pgm if possible. 
-                                            Since browser can't render PGM directly via img src, we'll try to show the image if it's PNG
-                                            or let the browser attempt to show it. If it fails, we show a fallback.
-                                            For this implementation, the backend /image route tries to send PNG if available, else PGM. */}
-                                        <img 
-                                            src={getMapImageUrl(viewingMapId)} 
-                                            alt={`Map ${viewingMapId}`}
-                                            className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-                                            onError={(e) => {
-                                                // If image fails to load (e.g. it's a PGM that browser doesn't support)
-                                                (e.target as HTMLImageElement).style.display = 'none';
-                                                const fallback = document.getElementById('img-fallback');
-                                                if (fallback) fallback.style.display = 'flex';
-                                            }}
+                                        {/* Render PGM to Canvas or fallback to Image */}
+                                        <PgmViewer 
+                                            url={getMapImageUrl(viewingMapId)} 
+                                            alt={`Map ${viewingMapId}`} 
                                         />
-                                        <div id="img-fallback" className="hidden flex-col items-center justify-center text-center p-6 border-2 border-dashed border-border-base rounded-xl bg-card-bg/50">
+                                        <div id="img-fallback" className="hidden flex-col items-center justify-center text-center p-6 border-2 border-dashed border-border-base rounded-xl bg-card-bg/50 mt-4 absolute inset-0 m-auto h-fit w-fit">
                                             <svg className="w-12 h-12 text-txt-sec/50 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                             <p className="text-sm font-medium text-txt-main">Image Preview Unavailable</p>
                                             <p className="text-xs text-txt-sec mt-1 max-w-[250px]">The map file might be in a format (like PGM) that your browser cannot display directly, or the file is not accessible on the server.</p>

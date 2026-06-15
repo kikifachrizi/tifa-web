@@ -153,8 +153,7 @@ export default function ActivityLogPage() {
   // Filter logs client-side
   const filteredLogs = (() => {
     switch (filter) {
-      case 'success': return logs.filter(l => l.source === 'command' && l.status === 'success');
-      case 'sent': return logs.filter(l => l.source === 'command' && l.status === 'SENT');
+      case 'success': return logs.filter(l => l.source === 'command' && (l.status === 'success' || l.status === 'SENT'));
       case 'error': return logs.filter(l =>
         (l.source === 'command' && l.status !== 'success' && l.status !== 'SENT') ||
         (l.source === 'ws_traffic' && l.code === 'ERROR')
@@ -174,8 +173,7 @@ export default function ActivityLogPage() {
   // Counts for filter pills
   const cmdLogs = logs.filter(l => l.source === 'command');
   const wsLogs = logs.filter(l => l.source === 'ws_traffic');
-  const successCount = cmdLogs.filter(l => l.status === 'success').length;
-  const sentCount = cmdLogs.filter(l => l.status === 'SENT').length;
+  const successCount = cmdLogs.filter(l => l.status === 'success' || l.status === 'SENT').length;
   const errorCount = cmdLogs.filter(l => l.status !== 'success' && l.status !== 'SENT').length + wsLogs.filter(l => l.code === 'ERROR').length;
   const wsTrafficCount = wsLogs.length;
 
@@ -196,19 +194,11 @@ export default function ActivityLogPage() {
       );
     }
 
-    if (item.status === 'success') {
+    if (item.status === 'success' || item.status === 'SENT') {
       return (
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-100 dark:bg-emerald-500/10 border border-emerald-300 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-[10px] font-semibold uppercase tracking-wider">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-[0_0_4px_#34d399]"></span>
-          Success
-        </span>
-      );
-    }
-    if (item.status === 'SENT') {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/20 text-amber-700 dark:text-amber-400 text-[10px] font-semibold uppercase tracking-wider">
-          <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shadow-[0_0_4px_#fbbf24]"></span>
-          Sent
+          {item.status === 'success' ? 'Success' : 'Sent'}
         </span>
       );
     }
@@ -258,23 +248,12 @@ export default function ActivityLogPage() {
 
     // Command icons (same as before)
     const isError = item.status !== 'success' && item.status !== 'SENT';
-    const isSent = item.status === 'SENT';
 
     if (isError) {
       return (
         <div className="h-11 w-11 rounded-xl flex items-center justify-center bg-gradient-to-br from-rose-500/15 to-rose-600/5 border border-rose-500/25 text-rose-700 dark:text-rose-400 flex-shrink-0 shadow-[0_0_15px_rgba(244,63,94,0.1)]">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </div>
-      );
-    }
-
-    if (isSent) {
-      return (
-        <div className="h-11 w-11 rounded-xl flex items-center justify-center bg-gradient-to-br from-amber-500/15 to-amber-600/5 border border-amber-500/25 text-amber-700 dark:text-amber-400 flex-shrink-0 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
           </svg>
         </div>
       );
@@ -337,7 +316,6 @@ export default function ActivityLogPage() {
           {[
             { key: "all" as FilterType, label: "Semua", count: logs.length },
             { key: "success" as FilterType, label: "Berhasil", count: successCount },
-            { key: "sent" as FilterType, label: "Terkirim", count: sentCount },
             { key: "error" as FilterType, label: "Error", count: errorCount },
           ].map((item) => (
             <button
@@ -348,9 +326,7 @@ export default function ActivityLogPage() {
                   ? "bg-rose-100 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400 shadow-sm border-rose-300 dark:border-rose-500/20"
                   : item.key === "success"
                     ? "bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 shadow-sm border-emerald-300 dark:border-emerald-500/20"
-                    : item.key === "sent"
-                      ? "bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400 shadow-sm border-amber-300 dark:border-amber-500/20"
-                      : "bg-card-bg text-txt-main shadow-sm border-border-highlight"
+                    : "bg-card-bg text-txt-main shadow-sm border-border-highlight"
                 : "text-txt-sec hover:text-txt-main border-transparent"
                 }`}
             >

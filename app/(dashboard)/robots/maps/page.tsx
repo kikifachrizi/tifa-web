@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/components/LanguageProvider";
-import { getAllMaps, uploadMapFull, deleteMap, getDraftGoals, getGoalsByMap, createDestination as apiCreateGoal, updateDestination as apiUpdateGoal, deleteDestination as apiDeleteGoal, type Map, type Goal } from "@/lib/api";
+import { getAllMaps, uploadMapFull, deleteMap, getDraftGoals, getGoalsByMap, createDestination as apiCreateGoal, updateDestination as apiUpdateGoal, deleteDestination as apiDeleteGoal, getMapFiles, getMapImageUrl, type Map, type Goal } from "@/lib/api";
 
 type Category = {
     category_id: number | null;
@@ -61,6 +61,12 @@ export default function ManageMapsPage() {
     const [mapDestinations, setMapDestinations] = useState<Record<number, Goal[]>>({});
     const [loadingDestinations, setLoadingDestinations] = useState<Record<number, boolean>>({});
 
+    // Map Viewer Modal State
+    const [viewingMapId, setViewingMapId] = useState<number | null>(null);
+    const [isMapViewerOpen, setIsMapViewerOpen] = useState(false);
+    const [mapFiles, setMapFiles] = useState<any[]>([]);
+    const [loadingMapImage, setLoadingMapImage] = useState(false);
+
     // Goal CRUD Modal State
     const [isGoalModalOpen, setIsGoalModalOpen] = useState(false);
     const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
@@ -95,6 +101,25 @@ export default function ManageMapsPage() {
             }
             setLoadingDestinations(prev => ({ ...prev, [mapId]: false }));
         }
+    };
+
+    const openMapViewer = async (mapId: number) => {
+        setViewingMapId(mapId);
+        setIsMapViewerOpen(true);
+        setLoadingMapImage(true);
+        
+        const result = await getMapFiles(mapId);
+        if (result.data) {
+            setMapFiles(result.data.files || []);
+        }
+        
+        setLoadingMapImage(false);
+    };
+
+    const closeMapViewer = () => {
+        setIsMapViewerOpen(false);
+        setViewingMapId(null);
+        setMapFiles([]);
     };
 
     const openAddGoalModal = () => {
@@ -405,6 +430,13 @@ export default function ManageMapsPage() {
                                             <td className="px-6 py-4 text-sm text-txt-sec">{map.map_floor || '-'}</td>
                                             <td className="px-6 py-4 text-sm text-txt-sec">{new Date(map.created_at).toLocaleDateString()}</td>
                                             <td className="px-6 py-4 text-right">
+                                                <button 
+                                                    className="p-2 mr-2 text-txt-sec hover:text-blue-700 dark:text-blue-400 hover:bg-blue-100 dark:bg-blue-500/10 rounded-lg transition-colors" 
+                                                    title={(dict.dashboard.maps as any)?.see_map || "See Map"}
+                                                    onClick={(e) => { e.stopPropagation(); openMapViewer(map.map_id); }}
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                </button>
                                                 <button 
                                                     className="p-2 text-txt-sec hover:text-rose-700 dark:text-rose-400 hover:bg-rose-100 dark:bg-rose-500/10 rounded-lg transition-colors" 
                                                     title={dict.dashboard.maps?.delete_map || "Delete"}
@@ -808,6 +840,122 @@ export default function ManageMapsPage() {
                                 {isSavingGoal && <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />}
                                 {isSavingGoal ? 'Saving...' : (editingGoal ? 'Update Destination' : 'Create Destination')}
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* ===== MAP VIEWER MODAL ===== */}
+            {isMapViewerOpen && viewingMapId && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={closeMapViewer}>
+                    {/* Backdrop */}
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+                    
+                    {/* Modal Panel */}
+                    <div 
+                        className="relative bg-[#0f172a] border border-border-base rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] mx-4 flex flex-col animate-in zoom-in-95 fade-in duration-200 overflow-hidden"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-border-base bg-[#1e293b]/50">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400">
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                </div>
+                                <div>
+                                    <h3 className="text-base font-bold text-txt-main">Map Viewer</h3>
+                                    <p className="text-[11px] text-txt-sec">Map ID: {viewingMapId}</p>
+                                </div>
+                            </div>
+                            <button onClick={closeMapViewer} className="text-txt-sec hover:text-txt-main p-1.5 rounded-lg hover:bg-white/5 transition">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                            {/* Left: Image Viewer */}
+                            <div className="flex-1 bg-black/40 flex items-center justify-center p-6 relative min-h-[300px] border-r border-border-base">
+                                {loadingMapImage ? (
+                                    <div className="flex flex-col items-center gap-3 text-txt-sec">
+                                        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                                        <p className="text-sm">Loading map details...</p>
+                                    </div>
+                                ) : (
+                                    <div className="w-full h-full flex flex-col items-center justify-center relative group">
+                                        {/* Use img tag for png/jpg files, or a canvas wrapper for pgm if possible. 
+                                            Since browser can't render PGM directly via img src, we'll try to show the image if it's PNG
+                                            or let the browser attempt to show it. If it fails, we show a fallback.
+                                            For this implementation, the backend /image route tries to send PNG if available, else PGM. */}
+                                        <img 
+                                            src={getMapImageUrl(viewingMapId)} 
+                                            alt={`Map ${viewingMapId}`}
+                                            className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                                            onError={(e) => {
+                                                // If image fails to load (e.g. it's a PGM that browser doesn't support)
+                                                (e.target as HTMLImageElement).style.display = 'none';
+                                                const fallback = document.getElementById('img-fallback');
+                                                if (fallback) fallback.style.display = 'flex';
+                                            }}
+                                        />
+                                        <div id="img-fallback" className="hidden flex-col items-center justify-center text-center p-6 border-2 border-dashed border-border-base rounded-xl bg-card-bg/50">
+                                            <svg className="w-12 h-12 text-txt-sec/50 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                            <p className="text-sm font-medium text-txt-main">Image Preview Unavailable</p>
+                                            <p className="text-xs text-txt-sec mt-1 max-w-[250px]">The map file might be in a format (like PGM) that your browser cannot display directly, or the file is not accessible on the server.</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Right: File Metadata */}
+                            <div className="w-full md:w-80 bg-card-bg overflow-y-auto p-5">
+                                <h4 className="text-sm font-bold text-txt-main mb-4 flex items-center gap-2">
+                                    <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                    Map Files Metadata
+                                </h4>
+                                
+                                {loadingMapImage ? (
+                                    <div className="space-y-4">
+                                        {[1, 2].map(i => (
+                                            <div key={i} className="animate-pulse flex flex-col gap-2 p-3 bg-[#1e293b]/30 rounded-lg border border-border-base/50">
+                                                <div className="h-4 bg-border-base rounded w-3/4"></div>
+                                                <div className="h-3 bg-border-base rounded w-1/2"></div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : mapFiles.length > 0 ? (
+                                    <div className="space-y-3">
+                                        {mapFiles.map((file, idx) => (
+                                            <div key={idx} className="p-3 bg-[#1e293b]/40 border border-border-base rounded-xl">
+                                                <div className="flex items-start justify-between mb-2">
+                                                    <div className="font-mono text-xs font-bold text-blue-400 break-all pr-2">{file.file_name}</div>
+                                                    <div className="text-[10px] font-medium bg-black/30 px-1.5 py-0.5 rounded text-txt-sec uppercase">{file.file_type}</div>
+                                                </div>
+                                                <div className="text-[11px] text-txt-sec mb-2">
+                                                    Size: {(file.file_size / 1024).toFixed(1)} KB
+                                                </div>
+                                                
+                                                {file.metadata && Object.keys(file.metadata).length > 0 && (
+                                                    <div className="mt-2 pt-2 border-t border-border-base/50">
+                                                        <div className="text-[10px] uppercase text-txt-sec font-semibold mb-1.5">YAML Data</div>
+                                                        <div className="grid grid-cols-1 gap-1">
+                                                            {Object.entries(file.metadata).map(([key, val]) => (
+                                                                <div key={key} className="flex justify-between text-[11px]">
+                                                                    <span className="text-txt-sec/80 capitalize">{key.replace(/_/g, ' ')}</span>
+                                                                    <span className="font-mono text-txt-main max-w-[120px] truncate" title={String(val)}>{String(val)}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center p-6 border border-dashed border-border-base rounded-xl text-txt-sec">
+                                        <p className="text-sm">No files associated with this map.</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

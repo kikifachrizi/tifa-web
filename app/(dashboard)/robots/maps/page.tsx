@@ -515,8 +515,8 @@ export default function ManageMapsPage() {
 
             {!isUploadMode ? (
                 // MAP LIST VIEW
-                <div className="glass-panel rounded-xl overflow-hidden border border-border-base">
-                    <table className="min-w-full divide-y divide-border-base">
+                <div className="glass-panel rounded-xl overflow-x-auto border border-border-base w-full">
+                    <table className="min-w-full divide-y divide-border-base whitespace-nowrap">
                         <thead className="bg-[#0f172a]/50">
                             <tr>
                                 <th className="px-6 py-4 text-left text-xs font-semibold text-txt-accent uppercase">{dict.dashboard.maps?.map_name || "Map Name"}</th>
@@ -759,7 +759,7 @@ export default function ManageMapsPage() {
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                                             </button>
                                             
-                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-2">
                                                 <div>
                                                     <label className="text-xs text-txt-sec mb-1 block">Name</label>
                                                     <input value={dest.destination_name} onChange={e => updateDestination(i, "destination_name", e.target.value)} className="input-dark w-full px-3 py-2 rounded-lg text-sm" />
@@ -790,7 +790,7 @@ export default function ManageMapsPage() {
                                                     </label>
                                                 </div>
                                             </div>
-                                            <div className="grid grid-cols-4 gap-4 mt-3">
+                                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-3">
                                                 <div>
                                                     <label className="text-xs text-txt-sec mb-1 block">X</label>
                                                     <input type="number" step="0.01" value={dest.x} onChange={e => updateDestination(i, "x", parseFloat(e.target.value))} className="input-dark w-full px-3 py-2 rounded-lg text-sm" />
@@ -881,7 +881,7 @@ export default function ManageMapsPage() {
 
                         {/* Body */}
                         <div className="px-6 py-5 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="text-xs font-medium text-txt-sec mb-1.5 block">Destination Name <span className="text-rose-700 dark:text-rose-400">*</span></label>
                                     <input 
@@ -916,7 +916,7 @@ export default function ManageMapsPage() {
                                 </select>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                 <div>
                                     <label className="text-xs font-medium text-txt-sec mb-1.5 block">X Coordinate</label>
                                     <input 

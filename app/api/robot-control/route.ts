@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getTableGoals, getAllGoalsForMap, sendRobotToTable, sendRobotToMove, getActiveRobotTasks, getTaskHistory, logTeleopToCommandLog, logTeleopDoneToCommandLog, markTaskAsDone, setActiveMap } from '@/lib/api/robotControl';
+import { getTableGoals, getAllGoalsForMap, sendRobotToTable, sendRobotToMove, getActiveRobotTasks, getTaskHistory, logTeleopToCommandLog, logTeleopDoneToCommandLog, markTaskAsDone, setActiveMap, isRobotOnline } from '@/lib/api/robotControl';
 import { decodePayload, sendTeleopCommand, sendTeleopDoneCommand, getWsUiId, type TeleopCommandPayload, type TeleopDoneCommandPayload, type MappingCommandPayload, type MapSelectedCommandPayload, type TalkCommandPayload } from '@/lib/wsClient';
 
 export async function GET(request: Request) {
@@ -81,6 +81,18 @@ export async function POST(request: Request) {
                 );
             }
 
+            // Check robot online status before processing teleop
+            const preCheck = decodePayload<TeleopCommandPayload>(encoded_payload);
+            if (preCheck.data?.robot_id) {
+                const robotStatus = await isRobotOnline(preCheck.data.robot_id);
+                if (!robotStatus.online) {
+                    return NextResponse.json(
+                        { sent: false, error: `Robot ${preCheck.data.robot_id} sedang tidak aktif (offline). Perintah tidak dapat dikirim.`, robot_offline: true, last_seen: robotStatus.lastSeen },
+                        { status: 503 }
+                    );
+                }
+            }
+
             const payload = decodePayload<TeleopCommandPayload>(encoded_payload);
 
             // Validate required fields
@@ -120,6 +132,20 @@ export async function POST(request: Request) {
             const body = await request.json();
             const { encoded_payload } = body;
             if (!encoded_payload) return NextResponse.json({ error: 'Missing encoded_payload' }, { status: 400 });
+
+            // Check robot online status before processing mapping
+            try {
+                const preCheck = decodePayload<MappingCommandPayload>(encoded_payload);
+                if (preCheck.data?.robot_id) {
+                    const robotStatus = await isRobotOnline(preCheck.data.robot_id);
+                    if (!robotStatus.online) {
+                        return NextResponse.json(
+                            { error: `Robot ${preCheck.data.robot_id} sedang tidak aktif (offline). Perintah mapping tidak dapat dikirim.`, robot_offline: true, last_seen: robotStatus.lastSeen },
+                            { status: 503 }
+                        );
+                    }
+                }
+            } catch { /* decode error handled below */ }
 
             let payload;
             try {
@@ -311,6 +337,15 @@ export async function POST(request: Request) {
                 );
             }
 
+            // Check robot online status before processing teleop-done
+            const robotStatus = await isRobotOnline(payload.data.robot_id);
+            if (!robotStatus.online) {
+                return NextResponse.json(
+                    { sent: false, error: `Robot ${payload.data.robot_id} sedang tidak aktif (offline).`, robot_offline: true, last_seen: robotStatus.lastSeen },
+                    { status: 503 }
+                );
+            }
+
             // ui_id comes from frontend (per-session unique ID)
 
             const result = await sendTeleopDoneCommand(payload);
@@ -363,6 +398,15 @@ export async function POST(request: Request) {
                 );
             }
 
+            // Check robot online status before processing MOVE
+            const robotStatus = await isRobotOnline(robot_id);
+            if (!robotStatus.online) {
+                return NextResponse.json(
+                    { data: null, error: `Robot ${robot_id} sedang tidak aktif (offline). Perintah MOVE tidak dapat dikirim.`, robot_offline: true, last_seen: robotStatus.lastSeen },
+                    { status: 503 }
+                );
+            }
+
             const result = await sendRobotToMove(payload);
             return NextResponse.json(result);
         } catch (err: unknown) {
@@ -403,6 +447,15 @@ export async function POST(request: Request) {
             return NextResponse.json(
                 { data: null, error: 'Missing required fields: device_id, tasks, map_id, robot_id, origin_id' },
                 { status: 400 }
+            );
+        }
+
+        // Check robot online status before processing OP (send-to-table)
+        const robotStatus = await isRobotOnline(robot_id);
+        if (!robotStatus.online) {
+            return NextResponse.json(
+                { data: null, error: `Robot ${robot_id} sedang tidak aktif (offline). Perintah navigasi tidak dapat dikirim.`, robot_offline: true, last_seen: robotStatus.lastSeen },
+                { status: 503 }
             );
         }
 

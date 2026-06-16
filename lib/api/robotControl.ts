@@ -29,6 +29,55 @@ export type SendToTableResult = {
 };
 
 // ============================================
+// ROBOT ONLINE CHECK
+// ============================================
+
+/**
+ * Check if a robot is currently online by verifying its last status update.
+ * A robot is considered online if it has reported status within the last 5 minutes
+ * from any of these sources: h_state, h_battery, h_ws_traffic, h_connection_log.
+ * 
+ * @param robotId - The robot's device_code (e.g. "TFRB1")
+ * @returns { online: boolean, deviceId: number | null, lastSeen: string | null }
+ */
+export async function isRobotOnline(robotId: string): Promise<{ online: boolean; deviceId: number | null; lastSeen: string | null }> {
+    try {
+        const rows = await query<{ device_id: number; status_updated_at: string | null }>(
+            `SELECT d.device_id,
+                    GREATEST(
+                        COALESCE((SELECT recorded_at FROM h_state WHERE device_id = d.device_id ORDER BY recorded_at DESC LIMIT 1), '1970-01-01'::timestamptz),
+                        COALESCE((SELECT recorded_at FROM h_battery WHERE device_id = d.device_id ORDER BY recorded_at DESC LIMIT 1), '1970-01-01'::timestamptz),
+                        COALESCE((SELECT recorded_at FROM h_ws_traffic WHERE device_id = d.device_id ORDER BY recorded_at DESC LIMIT 1), '1970-01-01'::timestamptz),
+                        COALESCE((SELECT connected_at FROM h_connection_log WHERE device_id = d.device_id ORDER BY connected_at DESC LIMIT 1), '1970-01-01'::timestamptz)
+                    ) AS status_updated_at
+             FROM m_device d
+             WHERE d.device_code = $1
+             LIMIT 1`,
+            [robotId]
+        );
+
+        if (rows.length === 0) {
+            return { online: false, deviceId: null, lastSeen: null };
+        }
+
+        const { device_id, status_updated_at } = rows[0];
+        if (!status_updated_at) {
+            return { online: false, deviceId: device_id, lastSeen: null };
+        }
+
+        const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+        const lastUpdate = new Date(status_updated_at);
+        const isOnline = lastUpdate > fiveMinutesAgo;
+
+        return { online: isOnline, deviceId: device_id, lastSeen: status_updated_at };
+    } catch (err) {
+        console.error('[robotControl] Failed to check robot online status:', err);
+        // On error, allow the command through (fail-open) to avoid blocking operations
+        return { online: true, deviceId: null, lastSeen: null };
+    }
+}
+
+// ============================================
 // GET TABLE GOALS
 // ============================================
 

@@ -98,6 +98,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
     const [lastSendStatus, setLastSendStatus] = useState<"idle" | "ok" | "error">("idle");
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const isPressingRef = useRef(false);
+    const hasShownOfflineWarningRef = useRef(false);
 
     // Acceleration / Deceleration state
     const [accelPhase, setAccelPhase] = useState<number>(0); // 0..ACCEL_STEPS.length (0 = stopped)
@@ -121,7 +122,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
     const [mapCategory, setMapCategory] = useState("laboratorium");
     const [mapCategoryType, setMapCategoryType] = useState("custom");
     const [isWaitingForSaveConfirm, setIsWaitingForSaveConfirm] = useState(false);
-    const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+    const [toast, setToast] = useState<{ type: "success" | "error" | "warning"; message: string } | null>(null);
 
     // Voice / Talk State
     const [isTalkActive, setIsTalkActive] = useState(false);
@@ -130,7 +131,8 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
     // Toast auto-dismiss
     useEffect(() => {
         if (!toast) return;
-        const timer = setTimeout(() => setToast(null), 3000);
+        const duration = toast.type === "warning" ? 6000 : 3000;
+        const timer = setTimeout(() => setToast(null), duration);
         return () => clearTimeout(timer);
     }, [toast]);
 
@@ -175,6 +177,13 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
             } else {
                 setToast({ type: "success", message: "Mapping started!" });
                 setIsMapping(true);
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                if ((result as any).robot_may_be_offline) {
+                    setTimeout(() => {
+                        setToast({ type: "warning", message: `⚠️ Robot mungkin tidak aktif. Perintah tetap dikirim.` });
+                    }, 500);
+                }
             }
         } catch {
             setToast({ type: "error", message: "Failed to start mapping" });
@@ -207,6 +216,13 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                 setIsMappingDone(true);
                 setShowSaveMapPrompt(false);
                 setMapName("");
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                if ((result as any).robot_may_be_offline) {
+                    setTimeout(() => {
+                        setToast({ type: "warning", message: `⚠️ Robot mungkin tidak aktif. Perintah tetap dikirim.` });
+                    }, 500);
+                }
             }
         } catch {
             setToast({ type: "error", message: "Failed to save mapping" });
@@ -217,7 +233,7 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
 
     const handleStopMapping = async () => {
         try {
-            await sendMappingCommand({
+            const result = await sendMappingCommand({
                 code: 'MAPPING_STOP',
                 data: {
                     robot_id: robotId,
@@ -228,6 +244,13 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
             });
             setIsMapping(false);
             setToast({ type: "success", message: "Mapping canceled" });
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            if ((result as any).robot_may_be_offline) {
+                setTimeout(() => {
+                    setToast({ type: "warning", message: `⚠️ Robot mungkin tidak aktif. Perintah tetap dikirim.` });
+                }, 500);
+            }
         } catch {
             setToast({ type: "error", message: "Failed to stop mapping" });
         }
@@ -266,6 +289,13 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                 setToast({ type: "success", message: `Flagged: ${flagDestName}` });
                 setShowFlaggingPrompt(false);
                 setFlagDestName("");
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                if ((result as any).robot_may_be_offline) {
+                    setTimeout(() => {
+                        setToast({ type: "warning", message: `⚠️ Robot mungkin tidak aktif. Perintah tetap dikirim.` });
+                    }, 500);
+                }
             }
         } catch {
             setToast({ type: "error", message: "Failed to save coordinate" });
@@ -308,6 +338,19 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
                     speed: speedLevel,
                 });
                 setLastSendStatus(result.sent ? "ok" : "error");
+
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                if ((result as any).robot_may_be_offline && !hasShownOfflineWarningRef.current) {
+                    hasShownOfflineWarningRef.current = true;
+                    setToast({
+                        type: "warning",
+                        message: `⚠️ Robot mungkin tidak aktif. Perintah teleop tetap dikirim.`,
+                    });
+                    // Reset warning flag after 10s so it can show again if needed
+                    setTimeout(() => {
+                        hasShownOfflineWarningRef.current = false;
+                    }, 10000);
+                }
             } catch {
                 setLastSendStatus("error");
             }
@@ -576,7 +619,12 @@ export default function TeleopDpad({ selectedGroup, onDone }: Props) {
     return (
         <div className="space-y-5">
             {toast && (
-                <div className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${toast.type === "success" ? "bg-accent/10 text-accent border border-accent/20" : "bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/20"}`}>
+                <div className={`px-3 py-2 rounded-lg text-xs font-medium flex items-center gap-2 ${toast.type === "success" ? "bg-accent/10 text-accent border border-accent/20" : toast.type === "warning" ? "bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/20" : "bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/20"}`}>
+                    {toast.type === "warning" ? (
+                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                    ) : null}
                     {toast.message}
                 </div>
             )}

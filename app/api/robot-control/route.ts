@@ -81,15 +81,16 @@ export async function POST(request: Request) {
                 );
             }
 
-            // Check robot online status before processing teleop
+            // Check robot online status (warn-but-send: command proceeds regardless)
             const preCheck = decodePayload<TeleopCommandPayload>(encoded_payload);
+            let robotMayBeOffline = false;
+            let robotLastSeen: string | null = null;
             if (preCheck.data?.robot_id) {
                 const robotStatus = await isRobotOnline(preCheck.data.robot_id);
                 if (!robotStatus.online) {
-                    return NextResponse.json(
-                        { sent: false, error: `Robot ${preCheck.data.robot_id} sedang tidak aktif (offline). Perintah tidak dapat dikirim.`, robot_offline: true, last_seen: robotStatus.lastSeen },
-                        { status: 503 }
-                    );
+                    robotMayBeOffline = true;
+                    robotLastSeen = robotStatus.lastSeen;
+                    console.warn(`[robot-control] ⚠️ Robot ${preCheck.data.robot_id} may be offline (last seen: ${robotStatus.lastSeen}). Sending teleop command anyway.`);
                 }
             }
 
@@ -116,7 +117,7 @@ export async function POST(request: Request) {
                 console.error('Failed to log teleop payload:', logErr);
             }
 
-            return NextResponse.json(result);
+            return NextResponse.json({ ...result, ...(robotMayBeOffline ? { robot_may_be_offline: true, last_seen: robotLastSeen } : {}) });
         } catch (err: unknown) {
             const error = err as Error;
             return NextResponse.json(
@@ -133,16 +134,17 @@ export async function POST(request: Request) {
             const { encoded_payload } = body;
             if (!encoded_payload) return NextResponse.json({ error: 'Missing encoded_payload' }, { status: 400 });
 
-            // Check robot online status before processing mapping
+            // Check robot online status (warn-but-send: command proceeds regardless)
+            let mappingRobotMayBeOffline = false;
+            let mappingRobotLastSeen: string | null = null;
             try {
                 const preCheck = decodePayload<MappingCommandPayload>(encoded_payload);
                 if (preCheck.data?.robot_id) {
                     const robotStatus = await isRobotOnline(preCheck.data.robot_id);
                     if (!robotStatus.online) {
-                        return NextResponse.json(
-                            { error: `Robot ${preCheck.data.robot_id} sedang tidak aktif (offline). Perintah mapping tidak dapat dikirim.`, robot_offline: true, last_seen: robotStatus.lastSeen },
-                            { status: 503 }
-                        );
+                        mappingRobotMayBeOffline = true;
+                        mappingRobotLastSeen = robotStatus.lastSeen;
+                        console.warn(`[robot-control] ⚠️ Robot ${preCheck.data.robot_id} may be offline (last seen: ${robotStatus.lastSeen}). Sending mapping command anyway.`);
                     }
                 }
             } catch { /* decode error handled below */ }
@@ -203,7 +205,7 @@ export async function POST(request: Request) {
                 console.error('Failed to insert map/goal records into database:', dbErr);
             }
 
-            return NextResponse.json(result);
+            return NextResponse.json({ ...result, ...(mappingRobotMayBeOffline ? { robot_may_be_offline: true, last_seen: mappingRobotLastSeen } : {}) });
         } catch (err: unknown) {
             const error = err as Error;
             return NextResponse.json({ error: error.message ?? 'Server error processing mapping' }, { status: 500 });
@@ -337,13 +339,11 @@ export async function POST(request: Request) {
                 );
             }
 
-            // Check robot online status before processing teleop-done
-            const robotStatus = await isRobotOnline(payload.data.robot_id);
-            if (!robotStatus.online) {
-                return NextResponse.json(
-                    { sent: false, error: `Robot ${payload.data.robot_id} sedang tidak aktif (offline).`, robot_offline: true, last_seen: robotStatus.lastSeen },
-                    { status: 503 }
-                );
+            // Check robot online status (warn-but-send: command proceeds regardless)
+            const teleopDoneRobotStatus = await isRobotOnline(payload.data.robot_id);
+            const teleopDoneRobotMayBeOffline = !teleopDoneRobotStatus.online;
+            if (teleopDoneRobotMayBeOffline) {
+                console.warn(`[robot-control] ⚠️ Robot ${payload.data.robot_id} may be offline (last seen: ${teleopDoneRobotStatus.lastSeen}). Sending teleop-done command anyway.`);
             }
 
             // ui_id comes from frontend (per-session unique ID)
@@ -357,7 +357,7 @@ export async function POST(request: Request) {
                 console.error('Failed to log teleop done payload:', logErr);
             }
 
-            return NextResponse.json(result);
+            return NextResponse.json({ ...result, ...(teleopDoneRobotMayBeOffline ? { robot_may_be_offline: true, last_seen: teleopDoneRobotStatus.lastSeen } : {}) });
         } catch (err: unknown) {
             const error = err as Error;
             return NextResponse.json(
@@ -398,17 +398,15 @@ export async function POST(request: Request) {
                 );
             }
 
-            // Check robot online status before processing MOVE
-            const robotStatus = await isRobotOnline(robot_id);
-            if (!robotStatus.online) {
-                return NextResponse.json(
-                    { data: null, error: `Robot ${robot_id} sedang tidak aktif (offline). Perintah MOVE tidak dapat dikirim.`, robot_offline: true, last_seen: robotStatus.lastSeen },
-                    { status: 503 }
-                );
+            // Check robot online status (warn-but-send: command proceeds regardless)
+            const moveRobotStatus = await isRobotOnline(robot_id);
+            const moveRobotMayBeOffline = !moveRobotStatus.online;
+            if (moveRobotMayBeOffline) {
+                console.warn(`[robot-control] ⚠️ Robot ${robot_id} may be offline (last seen: ${moveRobotStatus.lastSeen}). Sending MOVE command anyway.`);
             }
 
             const result = await sendRobotToMove(payload);
-            return NextResponse.json(result);
+            return NextResponse.json({ ...result, ...(moveRobotMayBeOffline ? { robot_may_be_offline: true, last_seen: moveRobotStatus.lastSeen } : {}) });
         } catch (err: unknown) {
             const error = err as Error;
             return NextResponse.json(
@@ -450,13 +448,11 @@ export async function POST(request: Request) {
             );
         }
 
-        // Check robot online status before processing OP (send-to-table)
-        const robotStatus = await isRobotOnline(robot_id);
-        if (!robotStatus.online) {
-            return NextResponse.json(
-                { data: null, error: `Robot ${robot_id} sedang tidak aktif (offline). Perintah navigasi tidak dapat dikirim.`, robot_offline: true, last_seen: robotStatus.lastSeen },
-                { status: 503 }
-            );
+        // Check robot online status (warn-but-send: command proceeds regardless)
+        const navRobotStatus = await isRobotOnline(robot_id);
+        const navRobotMayBeOffline = !navRobotStatus.online;
+        if (navRobotMayBeOffline) {
+            console.warn(`[robot-control] ⚠️ Robot ${robot_id} may be offline (last seen: ${navRobotStatus.lastSeen}). Sending navigation command anyway.`);
         }
 
         for (const task of tasks) {
@@ -470,7 +466,7 @@ export async function POST(request: Request) {
 
         // Send robot to table (OP command with speed)
         const result = await sendRobotToTable({ device_id, tasks, map_id, robot_id, origin_id, speed });
-        return NextResponse.json(result);
+        return NextResponse.json({ ...result, ...(navRobotMayBeOffline ? { robot_may_be_offline: true, last_seen: navRobotStatus.lastSeen } : {}) });
     } catch (err: unknown) {
         const error = err as Error;
         return NextResponse.json(

@@ -54,7 +54,7 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
     const [selectedMapId, setSelectedMapId] = useState<number | null>(null);
     const [activeTasks, setActiveTasks] = useState<GoalQueue[]>([]);
     const [isSending, setIsSending] = useState(false);
-    const [toast, setToast] = useState<{ type: "success" | "error"; message: string } | null>(null);
+    const [toast, setToast] = useState<{ type: "success" | "error" | "warning"; message: string } | null>(null);
     const [isExpanded, setIsExpanded] = useState(true);
     const [historyItems, setHistoryItems] = useState<(GoalQueue & { day_label?: string })[]>([]);
     const [showHistory, setShowHistory] = useState(false);
@@ -231,7 +231,8 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
     // Toast auto-dismiss
     useEffect(() => {
         if (!toast) return;
-        const timer = setTimeout(() => setToast(null), 4000);
+        const duration = toast.type === "warning" ? 6000 : 4000;
+        const timer = setTimeout(() => setToast(null), duration);
         return () => clearTimeout(timer);
     }, [toast]);
 
@@ -268,6 +269,17 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
                 setActiveTray(null);
                 setTrayDestinations({});
                 void loadActiveTasks();
+
+                // Show warning if robot may be offline (warn-but-send)
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                if ((result as any).robot_may_be_offline) {
+                    setTimeout(() => {
+                        setToast({
+                            type: "warning",
+                            message: `⚠️ Robot mungkin tidak aktif. Perintah tetap dikirim — jika robot aktif, perintah akan diproses.`,
+                        });
+                    }, 500);
+                }
             }
         } catch {
             setToast({ type: "error", message: d.error });
@@ -301,6 +313,17 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
                     message: `Sending robot to ${actionName}...`,
                 });
                 void loadActiveTasks();
+
+                // Show warning if robot may be offline (warn-but-send)
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                if ((result as any).robot_may_be_offline) {
+                    setTimeout(() => {
+                        setToast({
+                            type: "warning",
+                            message: `⚠️ Robot mungkin tidak aktif. Perintah tetap dikirim — jika robot aktif, perintah akan diproses.`,
+                        });
+                    }, 500);
+                }
             }
         } catch {
             setToast({ type: "error", message: "Failed to perform action." });
@@ -427,11 +450,17 @@ export default function RobotControlPanel({ selectedGroup }: Props) {
                             {toast && (
                                 <div className={`mb-4 px-4 py-3 rounded-xl text-sm font-medium flex items-center gap-2 animate-in slide-in-from-top-2 ${toast.type === "success"
                                     ? "bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-txt-accent border border-emerald-300 dark:border-emerald-500/20"
-                                    : "bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/20"
+                                    : toast.type === "warning"
+                                        ? "bg-amber-100 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-300 dark:border-amber-500/20"
+                                        : "bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-500/20"
                                     }`}>
                                     {toast.type === "success" ? (
                                         <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    ) : toast.type === "warning" ? (
+                                        <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                         </svg>
                                     ) : (
                                         <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

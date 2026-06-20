@@ -110,7 +110,7 @@ export async function getDevicesByMode(mode: string): Promise<ApiResult<DeviceSt
 export async function getLowBatteryDevices(): Promise<ApiResult<DeviceStatus[]>> {
     try {
         const data = await query<DeviceStatus>(
-            `${STATUS_QUERY_BASE} WHERE v.battery_percent < 30`
+            `${STATUS_QUERY_BASE} WHERE v.battery_percent < 50`
         );
 
         return {

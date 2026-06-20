@@ -55,16 +55,21 @@ export default function NotificationBell({ allowedDeviceIds }: { allowedDeviceId
                 const id = typeof device.device_id === 'string' ? parseInt(device.device_id, 10) : device.device_id;
                 return id && (!allowedDeviceIds || allowedDeviceIds.includes(id));
             })
-            .map((device) => ({
-                id: `battery-${device.device_id}-${new Date().toLocaleDateString('en-GB')}`,
-                device_id: device.device_id,
-                device_name: device.device_name,
-                type: 'low_battery' as const,
-                title: dict.dashboard.notifications?.low_battery_title || 'Low Battery Alert',
-                message: `${device.device_name || device.device_code} - ${device.battery_percent}%`,
-                is_read: false,
-                created_at: device.status_updated_at || new Date().toISOString(),
-            }));
+            .map((device) => {
+                const isCritical = device.battery_percent !== null && device.battery_percent < 30;
+                return {
+                    id: `battery-${isCritical ? 'critical' : 'low'}-${device.device_id}-${new Date().toLocaleDateString('en-GB')}`,
+                    device_id: device.device_id,
+                    device_name: device.device_name,
+                    type: 'low_battery' as const,
+                    title: isCritical 
+                        ? (dict.dashboard.notifications?.critical_battery_title || 'Critical Battery Alert')
+                        : (dict.dashboard.notifications?.low_battery_title || 'Low Battery Alert'),
+                    message: `${device.device_name || device.device_code} - ${device.battery_percent}%`,
+                    is_read: false,
+                    created_at: device.status_updated_at || new Date().toISOString(),
+                };
+            });
 
         // Get latest WS traffic per device (filtered)
         const { data: wsTraffic } = await getLatestWsTrafficPerDevice();
@@ -212,8 +217,9 @@ export default function NotificationBell({ allowedDeviceIds }: { allowedDeviceId
         }
         switch (type) {
             case 'low_battery':
+                const isBatteryCritical = title?.includes('Critical') || title?.includes('Kritis');
                 return (
-                    <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className={`w-4 h-4 ${isBatteryCritical ? 'text-rose-500' : 'text-amber-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
                 );
@@ -246,7 +252,12 @@ export default function NotificationBell({ allowedDeviceIds }: { allowedDeviceId
             if (title?.includes('Map:')) return 'bg-blue-100 dark:bg-blue-500/10 border border-blue-300 dark:border-blue-500/20 shadow-[0_0_15px_rgba(59,130,246,0.2)]';
             return 'bg-blue-100 dark:bg-blue-500/10 border border-blue-300 dark:border-blue-500/20';
         }
-        if (type === 'low_battery') return 'bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/20';
+        if (type === 'low_battery') {
+            const isBatteryCritical = title?.includes('Critical') || title?.includes('Kritis');
+            return isBatteryCritical 
+                ? 'bg-rose-100 dark:bg-rose-500/10 border border-rose-300 dark:border-rose-500/20'
+                : 'bg-amber-100 dark:bg-amber-500/10 border border-amber-300 dark:border-amber-500/20';
+        }
         if (type === 'error') return 'bg-rose-100 dark:bg-rose-500/10 border border-rose-300 dark:border-rose-500/20';
         return 'bg-blue-100 dark:bg-blue-500/10 border border-blue-300 dark:border-blue-500/20';
     };

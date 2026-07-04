@@ -7,13 +7,18 @@
 ## 1. Pengenalan TIFA (Introduction what is TIFA)
 
 ### Apa itu TIFA?
-*[Jelaskan secara singkat tentang TIFA, fungsi utamanya, dan tujuannya]*
+TIFA memiliki kepanjangan Tel-u Interactive Food Assistant yang merupakan AMR (autonomous mobile robot) untuk pelayanan di ruang lingkup F&B.
 
 ### Fitur Utama
-*[Sebutkan fitur-fitur utama yang dimiliki TIFA]*
+- Delivery
+- manual mapping
+- web monitoring
 
 ### Manfaat TIFA
-*[Jelaskan manfaat dan keuntungan menggunakan TIFA]*
+- TIFA merupakan Prototype pertama dari robot pengantar makanan yang dikembangkan oleh mahasiswa TA selama kurang lebih 3 tahun
+- meluluskan 3 angkatan mahasiswa TA dan CD
+- menjadi wadah internship dan kerja praktik
+- mengembangkan ekosistem Tel-u di subbagian teknologinya
 
 ---
 
@@ -75,7 +80,27 @@
 *[Jelaskan spesifikasi hardware yang dibutuhkan]*
 
 ### Daftar Komponen
-*[Sebutkan semua komponen hardware yang diperlukan]*
+- Controller Board
+    - Arduino nano
+    - BTS7960
+    - Raspberry pi 4 8GB
+
+- Sensor 
+    - Rotary encoder
+    - Rplidar C1
+    - esp32 c3 + watt meter DIY
+
+- Power System
+    - lithium ion 18650 13S3P (48V 30AH)
+    - DC-DC Stepdown 24V 15A
+    - DC-DC Stepdown 5V 3A
+
+- GUI
+    - Tab Infinix XPAD20
+
+- Others
+    - usb hub for raspberry pi
+    - emergency button
 
 ### Instalasi Hardware
 *[Berikan panduan langkah demi langkah untuk memasang hardware]*
@@ -102,6 +127,11 @@
 ---
 
 ## 8. Cara Penggunaan (How to Use)
+
+- bahas cara nyalain/setup robotnya gmna
+- bahas apps nya dulu ada apa aja
+- bahas webnya dlu ada apa aja
+
 
 ### 8.1 Mapping
 
@@ -260,6 +290,14 @@
 
 ### Kontribusi
 *[Jelaskan bagaimana pengguna dapat berkontribusi pada dokumentasi ini]*
+
+### Masalah belum terselesaikan (3 juli 2026)
+1. ketika tel-con jelek, odom robot berantakan kemana mana dan robot kacau navigasinya
+2. ketika dijalankan dan bebarengan dengan gsheet logger , pop up sampainya sempet ngga muncul
+3. pop up sampai harus bener2 di klik
+4. problem internet bikin robot harus direset supaya koneksi terhubung kembali (Tel-con/Tel-guest)
+5. sometimes ws_bridge error "Not connected, cannot send"
+6. sudo date -u -s "$(curl -sI https://www.google.com | sed -n 's/^[Dd]ate: //p' | tr -d '\r')" -> ini akan memperbaiki jam google untuk koneksi ke gsheet, tapi merusak odom sehingga robot tidak dapat jalan
 
 ---
 
